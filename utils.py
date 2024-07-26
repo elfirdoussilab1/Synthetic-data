@@ -36,9 +36,9 @@ def generate_data(n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi):
     # Pruning
     vq = np.zeros(m)
     # Indices of y_tilde = y
-    n_1 = (y_tilde == y_s).sum()
-    vq[y_tilde == y_s] = np.random.binomial(size = n_1, p = phi, n = 1) 
-    vq[y_tilde != y_s] = np.random.binomial(size = n - n_1, p = rho, n = 1)
+    m_1 = (y_tilde == y_s).sum()
+    vq[y_tilde == y_s] = np.random.binomial(size = m_1, p = phi, n = 1) 
+    vq[y_tilde != y_s] = np.random.binomial(size = m - m_1, p = rho, n = 1)
 
     # Test data
     X_test, y_test = gaussian_mixture(2*n, vmu, sigma = 1)
