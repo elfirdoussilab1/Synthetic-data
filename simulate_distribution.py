@@ -8,7 +8,6 @@ plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.s
 
 
 # Parameters
-# Parameters
 n = 1000
 m = 2000
 p = 500
