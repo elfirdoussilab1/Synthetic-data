@@ -3,11 +3,34 @@ import numpy as np
 from scipy import integrate
 import utils
 from math import sqrt
+import cmath
 
 # Root of a thrid order polynomial
 def solution(a, b, c, d):
     s = -(-3*c/a + b**2/a**2)/(3*(sqrt(-4*(-3*c/a + b**2/a**2)**3 + (27*d/a - 9*b*c/a**2 + 2*b**3/a**3)**2)/2 + 27*d/(2*a) - 9*b*c/(2*a**2) + b**3/a**3)**(1/3)) - (sqrt(-4*(-3*c/a + b**2/a**2)**3 + (27*d/a - 9*b*c/a**2 + 2*b**3/a**3)**2)/2 + 27*d/(2*a) - 9*b*c/(2*a**2) + b**3/a**3)**(1/3)/3 - b/(3*a)
     return s
+
+def solution_2(a, b, c, d):
+    # Depressing the cubic
+    p = (3 * a * c - b ** 2) / (3 * a ** 2)
+    q = (2 * b ** 3 - 9 * a * b * c + 27 * a ** 2 * d) / (27 * a ** 3)
+
+    # Solving for t using Cardano's method
+    delta = (q / 2) ** 2 + (p / 3) ** 3
+
+    u = (-q / 2 + cmath.sqrt(delta)) ** (1 / 3)
+    v = (-q / 2 - cmath.sqrt(delta)) ** (1 / 3)
+
+    t1 = u + v
+    t2 = -(u + v) / 2 + cmath.sqrt(3) * (u - v) / 2j
+    t3 = -(u + v) / 2 - cmath.sqrt(3) * (u - v) / 2j
+
+    # Back-substitute to find x
+    x1 = t1 - b / (3 * a)
+    x2 = t2 - b / (3 * a)
+    x3 = t3 - b / (3 * a)
+
+    return x1, x2, x3
 
 # Delta
 def Delta(n, m, p, sigma, epsilon, rho, phi, gamma):

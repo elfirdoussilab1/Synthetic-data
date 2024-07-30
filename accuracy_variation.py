@@ -8,15 +8,19 @@ from tqdm.auto import tqdm
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 
 # Parameters
-n = 500
+n = 2000
 p = 500
 sigma = 1.
-epsilon = 0.2
-rho = 0.
-phi = 1
+#epsilon = 0.2
+rho = 0.9
+phi = 0.2
 gamma = 1
 mu = 1
 mu_orth = 0.8
+
+# Epsilon critic for the case of only synthetic data
+epsilon = 1 / (1 + rho / phi)
+#epsilon = 0.9
 
 betas = [0.7, 0.8, 0.99]
 linewidth = 4
@@ -55,7 +59,7 @@ for i, beta in enumerate(betas):
     ax[i].tick_params(axis='y', which = 'both', labelsize=labelsize)
     ax[i].grid()
 
-ax[0].set_ylabel(f'Test accuracy, $\\varepsilon = {epsilon}$', fontsize = fontsize)
+ax[0].set_ylabel(f'Test accuracy, $\\varepsilon = {round(epsilon, 3)}$', fontsize = fontsize)
 
 path = './study-plot/' + f'accuracy_var-n-{n}-p-{p}-mu-{mu}-mu_orth-{mu_orth}-sigma-{sigma}-epsilon-{epsilon}-rho-{rho}-phi-{phi}.pdf'
 fig.savefig(path, bbox_inches='tight')
