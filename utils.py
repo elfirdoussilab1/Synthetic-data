@@ -8,27 +8,33 @@ def fix_seed(seed):
     random.seed(seed)
 
 # Gaussian mixture generation
-def gaussian_mixture(n, vmu, sigma = 1.):
+def gaussian_mixture(n, vmu, cov, isotrope = False):
     p = len(vmu)
     y = np.ones(n)
     y[: n // 2] = -1
-    Z = np.random.randn(p, n)
-    X = np.outer(vmu, y) + sigma * Z # vmu.T @ y + Z
+    
+    if isotrope:
+        sigma = np.sqrt(cov[0, 0]) # cov = sigma^2 * np.eye(p)
+        Z = sigma * np.random.randn(p, n)
+
+    else: # Synthetic data
+        Z = np.random.multivariate_normal(mean = np.zeros(p), cov = cov, size = n).T
+    X = np.outer(vmu, y) +  Z # vmu.T @ y + Z
     return X, y
 
 # Data generation: mixture of pi real data and (1 - pi) synthetic
-def generate_data(n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi):
+def generate_data(n, m, p, mu, mu_orth, beta, cov, isotrope, epsilon, rho, phi):
     
     # Real data
     vmu = np.zeros(p)
     vmu[0] = mu
-    X_real, y_real = gaussian_mixture(n, vmu, sigma = 1)
+    X_real, y_real = gaussian_mixture(n, vmu, np.eye(p), True)
 
     # Synthetic data
     vmu_orth = np.zeros(p)
     vmu_orth[1] = mu_orth
-    vmu_beta = beta * vmu + np.sqrt(1 - beta**2) * vmu_orth
-    X_s, y_s = gaussian_mixture(m, vmu_beta, sigma)
+    vmu_beta = beta * vmu + vmu_orth
+    X_s, y_s = gaussian_mixture(m, vmu_beta, cov, isotrope)
 
     # Noise the labels of the synthetic data
     y_tilde = y_s * (2 * np.random.binomial(size = m, p = 1 - epsilon, n = 1) - 1) # p = P[X = 1], i.e 1 - p = epsilon
@@ -41,13 +47,14 @@ def generate_data(n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi):
     vq[y_tilde != y_s] = np.random.binomial(size = m - m_1, p = rho, n = 1)
 
     # Test data
-    X_test, y_test = gaussian_mixture(2*n, vmu, sigma = 1)
+    X_test, y_test = gaussian_mixture(2*n, vmu, np.eye(p))
 
     return (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test)
 
 def accuracy(y, y_pred):
     acc = np.mean(y == y_pred)
-    return max(acc, 1 - acc)
+    #return max(acc, 1 - acc)
+    return acc
 
 def L2_loss(w, X, y):
     # X of shape (p, n)
@@ -67,14 +74,14 @@ def classifier_vector(X_real, y_real, X_s, y_tilde, vq, gamma):
 
     return Q @ (X_real @ y_real + (X_s * vq) @ y_tilde) / N
 
-def empirical_accuracy(batch, n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi, gamma, data_type = 'synthetic'):
+def empirical_accuracy(batch, n, m, p, mu, mu_orth, beta, cov, isotrope, epsilon, rho, phi, gamma, data_type = 'synthetic'):
     res = 0
     for i in range(batch):
         if 'synthetic' in data_type:
-            (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi)
+            (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, mu, mu_orth, beta, cov, isotrope, epsilon, rho, phi)
         
         elif 'amazon' in data_type:
-            print("Not implemented yet!")
+            print("Coming soon !")
             return -1 # Not implemented yet
 
         w = classifier_vector(X_real, y_real, X_s, y_tilde, vq, gamma)
@@ -82,14 +89,14 @@ def empirical_accuracy(batch, n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, p
     
     return res / batch
 
-def empirical_risk(batch, n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi, gamma, data_type = 'synthetic'):
+def empirical_risk(batch, n, m, p, mu, mu_orth, beta, cov, isotrope, epsilon, rho, phi, gamma, data_type = 'synthetic'):
     res = 0
     for i in range(batch):
         if 'synthetic' in data_type:
-            (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi)
+            (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, mu, mu_orth, beta, cov, isotrope, epsilon, rho, phi)
         
         elif 'amazon' in data_type:
-            print("Not implemented yet!")
+            print("Coming soon!")
             return -1 # Not implemented yet
 
         w = classifier_vector(X_real, y_real, X_s, y_tilde, vq, gamma)
@@ -97,14 +104,14 @@ def empirical_risk(batch, n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi, 
     
     return res / batch
 
-def empirical_mean(batch, n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi, gamma, data_type = 'synthetic'):
+def empirical_mean(batch, n, m, p, mu, mu_orth, beta, cov, isotrope, epsilon, rho, phi, gamma, data_type = 'synthetic'):
     res = 0
     for i in range(batch):
         if 'synthetic' in data_type:
-            (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi)
+            (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, mu, mu_orth, beta, cov, isotrope, epsilon, rho, phi)
         
         elif 'amazon' in data_type:
-            print("Not implemented yet!")
+            print("Coming soon!")
             return -1 # Not implemented yet
 
         w = classifier_vector(X_real, y_real, X_s, y_tilde, vq, gamma)
@@ -112,14 +119,14 @@ def empirical_mean(batch, n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi, 
     
     return res / batch
 
-def empirical_mean_2(batch, n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi, gamma, data_type = 'synthetic'):
+def empirical_mean_2(batch, n, m, p, mu, mu_orth, beta, cov, isotrope, epsilon, rho, phi, gamma, data_type = 'synthetic'):
     res = 0
     for i in range(batch):
         if 'synthetic' in data_type:
-            (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, mu, mu_orth, beta, sigma, epsilon, rho, phi)
+            (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, mu, mu_orth, beta, cov, isotrope, epsilon, rho, phi)
         
         elif 'amazon' in data_type:
-            print("Not implemented yet!")
+            print("Coming soon!")
             return -1 # Not implemented yet
 
         w = classifier_vector(X_real, y_real, X_s, y_tilde, vq, gamma)
