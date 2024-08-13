@@ -8,18 +8,18 @@ from tqdm.auto import tqdm
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 
 # Parameters
-n = 2000
+n = 1000
 p = 500
-sigma = 1.
-#epsilon = 0.2
-rho = 0.9
-phi = 0.2
+sigma = 1.5
+epsilon = 0.
+rho = 0.
+phi = 1
 gamma = 1
 mu = 1
 mu_orth = 0.8
 
 # Epsilon critic for the case of only synthetic data
-epsilon = 1 / (1 + rho / phi)
+#epsilon = 1 / (1 + rho / phi)
 #epsilon = 0.9
 
 betas = [0.7, 0.8, 0.99]
@@ -51,10 +51,10 @@ for i, beta in enumerate(betas):
     sentence_min = f'$1 - \\bar \pi = {round(m_min / (m_min + n), 3)} $'
     hx = 4e-3
     hy = 4e-3
-    ax[i].text(m_max / (m_max + n) + hx, np.max(accs) - hy, sentence_max, fontsize = fontsize - 10)
-    ax[i].text(m_min / (m_min + n) - hx, np.min(accs) + hy, sentence_min, fontsize = fontsize - 10)
+    #ax[i].text(m_max / (m_max + n) + hx, np.max(accs) - hy, sentence_max, fontsize = fontsize - 10)
+    #ax[i].text(m_min / (m_min + n) - hx, np.min(accs) + hy, sentence_min, fontsize = fontsize - 10)
     ax[i].set_title(f'$\\beta = {beta} $', fontsize = fontsize)
-    ax[i].set_xlabel('m', fontsize = fontsize)
+    ax[i].set_xlabel('$1 - \pi$', fontsize = fontsize)
     ax[i].tick_params(axis='x', which = 'both', labelsize=labelsize)
     ax[i].tick_params(axis='y', which = 'both', labelsize=labelsize)
     ax[i].grid()
