@@ -24,7 +24,7 @@ vmu_orth = np.zeros(p)
 vmu_orth[1] = mu_orth
 
 # Random covariance matrix
-fix_seed(123)
+fix_seed(404)
 x = np.random.randn(n, p)
 cov = x.T @ x / n
 eigvals, eigvectors = np.linalg.eig(cov)
@@ -55,7 +55,7 @@ for i, beta in enumerate(betas):
     # Plot all
     ax[i].plot(t1, gaussian(t1, mean_c1, std), color = 'tab:red', linewidth= linewidth)
     ax[i].plot(t2, gaussian(t2, mean_c2, std), color = 'tab:blue', linewidth= linewidth)
-    ax[i].set_xlabel('$\\mathbf{w}_{\\alpha}^\\top \\mathbf{x}$', fontsize = fontsize)
+    ax[i].set_xlabel('$\\mathbf{w}_q^\\top \\mathbf{x}$', fontsize = fontsize)
 
     # Plotting histogram
     ax[i].hist(X_test[:, (y_test < 0)].T @ w, color = 'tab:red', density = True, bins=25, alpha=.5, edgecolor = 'black')
