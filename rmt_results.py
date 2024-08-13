@@ -122,7 +122,7 @@ def test_expectation_2(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon
     pi = n / N
     lam = phi * (1 - epsilon) - rho * epsilon
     alpha = phi * (1 - epsilon) + rho * epsilon
-    q_bar = Q_bar_smart(n, m, vmu, vmu_beta, eigvals, eigvectors, epsilon, rho, phi, gamma)
+    q_bar = Q_bar(n, m, vmu, vmu_beta, cov, eigvals, epsilon, rho, phi, gamma)
     delta, delta_s = Delta(n, m, p, eigvals, epsilon, rho, phi, gamma)
 
     # Trace identities
@@ -161,7 +161,7 @@ def test_expectation_2(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon
 def test_accuracy(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho, phi, gamma):
 
     # E[g] and E[g^2]
-    mean = test_expectation(n, m, p, vmu, vmu_beta, eigvals, eigvectors, epsilon, rho, phi, gamma)
+    mean = test_expectation(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho, phi, gamma)
     expec_2 = test_expectation_2(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho, phi, gamma)
     std = np.sqrt(expec_2 - mean**2)
     return 1 - integrate.quad(lambda x: utils.gaussian(x, 0, 1), abs(mean)/std, np.inf)[0]
@@ -169,7 +169,7 @@ def test_accuracy(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho
 # test Risk
 def test_risk(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho, phi, gamma):
     # E[g] and E(g^2)
-    mean = test_expectation(n, m, p, vmu, vmu_beta, eigvals, eigvectors, epsilon, rho, phi, gamma)
+    mean = test_expectation(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho, phi, gamma)
     expec_2 = test_expectation_2(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho, phi, gamma)
     return expec_2 + 1 - 2 * mean    
     
