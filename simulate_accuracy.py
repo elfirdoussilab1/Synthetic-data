@@ -7,7 +7,7 @@ from utils import *
 
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 # Parameters
-n = 5000
+n = 200
 m = 2000
 p = 500
 mu = 1.5
