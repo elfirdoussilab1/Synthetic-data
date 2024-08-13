@@ -29,7 +29,7 @@ def solution(a, b, c, d):
     return x1, x2, x3
 
 # Delta
-def Delta(n, m, p, eigvals, epsilon, rho, phi, gamma): # verified
+def Delta(n, m, eigvals, epsilon, rho, phi, gamma): # verified
     alpha = phi * (1 - epsilon) + rho * epsilon
     N = n + m
     pi = n / N
@@ -64,7 +64,7 @@ def Q_bar(n, m, vmu, vmu_beta, cov, eigvals, epsilon, rho, phi, gamma):
     alpha = phi * (1 - epsilon) + rho * epsilon
     N = n + m
     pi = n / N
-    delta, delta_s = Delta(n, m, p, eigvals, epsilon, rho, phi, gamma)
+    delta, delta_s = Delta(n, m, eigvals, epsilon, rho, phi, gamma)
 
     # Q = (S_1 + S_2 + \theta I_p)^{-1}
     S_1 = pi * (np.outer(vmu, vmu) + np.eye(p)) / (1 + delta) 
@@ -75,11 +75,10 @@ def Q_bar(n, m, vmu, vmu_beta, cov, eigvals, epsilon, rho, phi, gamma):
 # Implementation of Q_bar with no matrix inversion
 def Q_bar_smart(n, m, vmu, vmu_beta, eigvals, eigvectors, epsilon, rho, phi, gamma):# verified, but prefer the first one
     P = eigvectors.T # (v_1, ..., v_p)
-    p = len(vmu)
     alpha = phi * (1 - epsilon) + rho * epsilon
     N = n + m
     pi = n / N
-    delta, delta_s = Delta(n, m, p, eigvals, epsilon, rho, phi, gamma)
+    delta, delta_s = Delta(n, m, eigvals, epsilon, rho, phi, gamma)
 
     # Q = A^{-1} - A^{-1} (zeta_1 vmu vmu^\top + zeta_2 vmu_beta vmu_beta^top) A^{-1}
     # inverse of Delta matrix
@@ -88,8 +87,8 @@ def Q_bar_smart(n, m, vmu, vmu_beta, eigvals, eigvectors, epsilon, rho, phi, gam
     A_1 = (P * DTA_1) @ P.T
     #A_1 = P @ np.diag(DTA_1) @ P.T
     mu_A_mu = vmu @ A_1 @ vmu.T
-    mu_A_mu_beta = vmu @ A_1 @ vmu_beta
-    mu_beta_A_mu_beta = vmu_beta @ A_1 @ vmu_beta
+    mu_A_mu_beta = vmu @ A_1 @ vmu_beta.T
+    mu_beta_A_mu_beta = vmu_beta @ A_1 @ vmu_beta.T
     det = (1 + pi * mu_A_mu / (1 + delta)) * (1 + alpha * (1 - pi) * mu_beta_A_mu_beta / (1 + delta_s)) - alpha * pi * (1 - pi) * mu_A_mu_beta**2 / ((1 + delta)*(1 + delta_s))
 
     M_11 = (1 + alpha * (1 - pi) * mu_beta_A_mu_beta / (1 + delta_s)) / det
@@ -110,7 +109,7 @@ def test_expectation(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, 
     lam = phi * (1 - epsilon) - rho * epsilon
     #q_bar = Q_bar_smart(n, m, vmu, vmu_beta, eigvals, eigvectors, epsilon, rho, phi, gamma)
     q_bar = Q_bar(n, m, vmu, vmu_beta, cov, eigvals, epsilon, rho, phi, gamma)
-    delta, delta_s = Delta(n, m, p, eigvals, epsilon, rho, phi, gamma)
+    delta, delta_s = Delta(n, m, eigvals, epsilon, rho, phi, gamma)
 
     s_1 = vmu @ q_bar @ vmu.T
     s_2 = vmu_beta @ q_bar @ vmu.T
@@ -123,7 +122,7 @@ def test_expectation_2(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon
     lam = phi * (1 - epsilon) - rho * epsilon
     alpha = phi * (1 - epsilon) + rho * epsilon
     q_bar = Q_bar(n, m, vmu, vmu_beta, cov, eigvals, epsilon, rho, phi, gamma)
-    delta, delta_s = Delta(n, m, p, eigvals, epsilon, rho, phi, gamma)
+    delta, delta_s = Delta(n, m, eigvals, epsilon, rho, phi, gamma)
 
     # Trace identities
     arr = gamma + pi / (1 + delta) + alpha * (1 - pi) * eigvals / (1 + delta_s) 
@@ -139,8 +138,8 @@ def test_expectation_2(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon
     h = (1 - b_2) * (1 - a_1) - a_2 * b_1
 
     # T_1 and T_2 in the final term
-    T_1 = (1 + delta)**2 * (a_1 * (1 - b_2) + a_2 * b_1) / (pi * h)
-    T_2 = (1 + delta_s)**2 * (a_2 * b_1 + b_2 * (1 - a_1)) / (alpha * h * (1 - pi))
+    T_1 = (a_1 * (1 - b_2) + a_2 * b_1) / h
+    T_2 = b_1 / (alpha * h)
 
     mu_q_mu = vmu @ q_bar @ vmu.T
     mu_q_mu_beta = vmu @ q_bar @ vmu_beta.T
@@ -151,9 +150,9 @@ def test_expectation_2(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon
     # Computing the sums now
     s_1 = (pi / (1 + delta))**2 * vmu @ exp @ vmu.T + (lam * (1 - pi)/ (1 + delta_s))**2 * vmu_beta @ exp @ vmu_beta.T + 2 * lam * pi * (1 - pi) * vmu @ exp @ vmu_beta.T / ((1 + delta)*(1 + delta_s))
 
-    s_2 = pi * T_1 * (1 - 2 * pi * mu_q_mu / (1 + delta) - 2 * lam * (1 - pi) * mu_q_mu_beta / (1 + delta_s)) / (1 + delta)**2
+    s_2 = T_1 * (1 - 2 * pi * mu_q_mu / (1 + delta) - 2 * lam * (1 - pi) * mu_q_mu_beta / (1 + delta_s))
 
-    s_3 = (1 - pi) * T_2 * (alpha - 2 * (1 - pi) * lam**2 * mu_beta_q_mu_beta / (1 + delta_s) - 2 * lam * pi * mu_q_mu_beta / (1 + delta) ) / (1 + delta_s)**2
+    s_3 = T_2 * (alpha - 2 * (1 - pi) * lam**2 * mu_beta_q_mu_beta / (1 + delta_s) - 2 * lam * pi * mu_q_mu_beta / (1 + delta) )
 
     return s_1 + s_2 + s_3
 

@@ -25,7 +25,7 @@ vmu_orth[1] = mu_orth
 vmu_beta = beta * vmu + vmu_orth
 
 # Covariance matrix
-fix_seed(123)
+fix_seed(1337)
 x = np.random.randn(n, p)
 cov = x.T @ x / n
 eigvals, eigvectors = np.linalg.eig(cov)
@@ -49,5 +49,5 @@ ax.set_xlabel('$\gamma$')
 ax.set_ylabel('Expectation')
 ax.grid(True)
 ax.legend()
-path = './results-plot/' + f'simulate_expectation-cov-n-{n}-m-{m}-p-{p}-beta-{beta}-mu-{mu}-mu_orth-{mu_orth}-epsilon-{epsilon}-rho-{rho}-phi-{phi}.pdf'
+path = './study-plot/' + f'simulate_expectation-cov-n-{n}-m-{m}-p-{p}-beta-{beta}-mu-{mu}-mu_orth-{mu_orth}-epsilon-{epsilon}-rho-{rho}-phi-{phi}.pdf'
 fig.savefig(path, bbox_inches='tight')

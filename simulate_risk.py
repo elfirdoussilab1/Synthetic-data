@@ -25,7 +25,7 @@ vmu_orth[1] = mu_orth
 vmu_beta = beta * vmu + vmu_orth
 
 # Covariance matrix
-fix_seed(123)
+fix_seed(1337)
 x = np.random.randn(n, p)
 cov = x.T @ x / n
 eigvals, eigvectors = np.linalg.eig(cov)
