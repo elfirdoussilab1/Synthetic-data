@@ -58,6 +58,30 @@ def ddelta(n, m, p, sigma, epsilon, rho, phi, gamma): # Old one
         print(delta)
     return delta
 
+def Delta_bars(n, m, p, epsilon, rho, phi, gamma):
+    alpha = phi * (1 - epsilon) + rho * epsilon
+    N = n + m
+    eta = p / N
+    pi = n / N
+    delta = 1
+    delta_s = 1
+    delta_bar = 1
+
+    while True:
+        delta_up = pi * (1 + delta_s) * delta_bar / (alpha * (1 - pi))
+        delta_s_up = alpha * delta / (1 + delta_bar)
+        a = gamma + pi / (1 + delta) + alpha * (1 - pi) / ((1 + delta_s) * (1 + delta_bar))
+        delta_bar_up = alpha * (1 - pi) * p / (n * (1 + delta_s) * a)
+
+        if abs(delta_up - delta) < 1e-12 and abs(delta_s_up - delta_s) < 1e-12 and abs(delta_bar_up - delta_bar) < 1e-12:
+            return delta_up, delta_s_up, delta_bar_up
+        else:
+            delta = delta_up
+            delta_s = delta_s_up
+            delta_bar = delta_bar_up
+
+        
+
 # Resolvent
 def Q_bar(n, m, vmu, vmu_beta, cov, eigvals, epsilon, rho, phi, gamma):
     p = len(vmu)
@@ -71,6 +95,20 @@ def Q_bar(n, m, vmu, vmu_beta, cov, eigvals, epsilon, rho, phi, gamma):
     S_2 = alpha * (1 - pi) * (np.outer(vmu_beta, vmu_beta) + cov) / (1 + delta_s)
 
     return np.linalg.solve(S_1 + S_2 + gamma * np.eye(p), np.eye(p))
+
+def Q_bar_bar(n, m, p, vmu, epsilon, rho, phi, gamma):
+    alpha = phi * (1 - epsilon) + rho * epsilon
+    N = n + m
+    pi = n / N
+    mu = np.linalg.norm(vmu)
+
+    # quantities
+    delta, delta_s, delta_bar = Delta_bars(n, m, p, epsilon, rho, phi, gamma)
+    a = pi / (1 + delta) + alpha * (1 - pi) / (1 + delta_s)
+    b = gamma + pi / (1 + delta) + alpha * (1 - pi) / ((1 + delta_s) * (1 + delta_bar))
+
+    return (np.eye(p) - a * np.outer(vmu, vmu) / (b + a * mu**2)) / b
+
 
 # Implementation of Q_bar with no matrix inversion
 def Q_bar_smart(n, m, vmu, vmu_beta, eigvals, eigvectors, epsilon, rho, phi, gamma):# verified, but prefer the first one
@@ -171,4 +209,70 @@ def test_risk(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho, ph
     mean = test_expectation(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho, phi, gamma)
     expec_2 = test_expectation_2(n, m, p, vmu, vmu_beta, cov, eigvals, eigvectors, epsilon, rho, phi, gamma)
     return expec_2 + 1 - 2 * mean    
+
+
+########################### Toy Setting results #########################
+def test_expectation_toy(n, m, p, mu, epsilon, rho, phi, gamma):
+    # Constants
+    N = n + m
+    pi = n / N
+    lam = phi * (1 - epsilon) - rho * epsilon
+    alpha = phi * (1 - epsilon) + rho * epsilon
+    delta, delta_s, delta_bar = Delta_bars(n, m, p, epsilon, rho, phi, gamma)
+
+    # Quantities
+    a = pi / (1 + delta) + alpha * (1 - pi) / (1 + delta_s)
+    b = gamma + pi / (1 + delta) + alpha * (1 - pi) / ((1 + delta_s) * (1 + delta_bar))
+
+    return (pi / (1 + delta) + lam * (1 - pi) / (1 + delta_s)) * mu**2 / (b + a * mu**2)
+def test_expectation_2_toy(n, m, p, mu, epsilon, rho, phi, gamma):
+    # Constants
+    N = n + m
+    pi = n / N
+    eta = p / N
+    lam = phi * (1 - epsilon) - rho * epsilon
+    alpha = phi * (1 - epsilon) + rho * epsilon
+    delta, delta_s, delta_bar = Delta_bars(n, m, p, epsilon, rho, phi, gamma)
+
+    # Quantities
+    a = pi / (1 + delta) + alpha * (1 - pi) / (1 + delta_s)
+    b = gamma + pi / (1 + delta) + alpha * (1 - pi) / ((1 + delta_s) * (1 + delta_bar))
+    h_bar = 1 - (alpha * (1 - pi) / ((1 + delta_s) * (1 + delta_bar)))**2 * (p / (n * b**2))
     
+    # 1/N Tr(Q_bar**2)
+    t = eta / b**2
+    a_1 = pi * t / (h_bar * (1 + delta)**2) 
+    a_2 = pi * t / (h_bar * (1 + delta)**2 * (1 + delta_bar)**2 )
+    b_1 = alpha * (1 - pi) * t / (h_bar * (1 + delta_s)**2 * (1 + delta_bar)**2)
+    b_2 = alpha * (1 - pi) * t / (h_bar * (1 + delta_s)**2 * (1 + delta_bar)**2)
+    h = (1 - a_1) * (1 - b_2) - a_2 * b_1
+    T_1 = (1 + delta)**2 * (a_1 * (1 - b_2) + a_2 * b_1) / (pi * h)
+    T_2 = (1 + delta_s)**2 * b_1 / (alpha * (1 - pi) * h)
+
+    mu_q_mu = mu**2 / (b + a * mu**2)
+    mu_q_2_mu = mu**2 / (b + a * mu**2)**2
+
+    # Final terms
+    r_1 = (pi / (1 + delta) + lam * (1 - pi) / (1 + delta_s)) **2 / h
+    s_1 = (1 + b_1 - b_2) * mu_q_mu**2 + (1 - b_2 + b_1 / (1 + delta_bar)**2) * mu_q_2_mu / h_bar
+
+    r_2 = pi * T_1 / (1 + delta)**2
+    s_2 = 1 - 2* pi * mu_q_mu / (1 + delta) - 2 * lam * (1 - pi) * mu_q_mu / (1 + delta_s)
+
+    r_3 = (1 - pi) * T_2 / (1 + delta_s)**2
+    s_3 = alpha - 2 * lam**2 * (1 - pi) * mu_q_mu / (1 + delta_s) - 2 * lam * pi * mu_q_mu / (1 + delta)
+
+    return r_1 * s_1 + r_2 * s_2 + r_3 * s_3
+
+def test_accuracy_toy(n, m, p, mu, epsilon, rho, phi, gamma):
+    # E[g] and E[g^2]
+    mean = test_expectation_toy(n, m, p, mu, epsilon, rho, phi, gamma)
+    expec_2 = test_expectation_2_toy(n, m, p, mu, epsilon, rho, phi, gamma)
+    std = np.sqrt(expec_2 - mean**2)
+    return 1 - integrate.quad(lambda x: utils.gaussian(x, 0, 1), abs(mean)/std, np.inf)[0]
+
+def test_risk_toy(n, m, p, mu, epsilon, rho, phi, gamma):
+    # E[g] and E[g^2]
+    mean = test_expectation_toy(n, m, p, mu, epsilon, rho, phi, gamma)
+    expec_2 = test_expectation_2_toy(n, m, p, mu, epsilon, rho, phi, gamma)
+    return expec_2 + 1 - 2 * mean   
