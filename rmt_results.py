@@ -225,6 +225,7 @@ def test_expectation_toy(n, m, p, mu, epsilon, rho, phi, gamma):
     b = gamma + pi / (1 + delta) + alpha * (1 - pi) / ((1 + delta_s) * (1 + delta_bar))
 
     return (pi / (1 + delta) + lam * (1 - pi) / (1 + delta_s)) * mu**2 / (b + a * mu**2)
+
 def test_expectation_2_toy(n, m, p, mu, epsilon, rho, phi, gamma):
     # Constants
     N = n + m
