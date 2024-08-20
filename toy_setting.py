@@ -33,10 +33,10 @@ for p in ps:
     vmu_hat = np.sum(y_r * X_r, axis = 1) / n
 
     # Estimating covariance
-    #C = (vmu * np.ones((n, p)) ).T
-    #cov = (y_r * X_r - C) @ (y_r * X_r - C).T / n
-    Z = np.random.randn(p, n)
-    cov = Z @ Z.T / n
+    C = (vmu * np.ones((n, p)) ).T
+    cov = (y_r * X_r - C) @ (y_r * X_r - C).T / n
+    #Z = np.random.randn(p, n)
+    #cov = Z @ Z.T / n
 
     # eigenvalues and eigenvectors
     eigvals, eigvectors = np.linalg.eig(cov)
