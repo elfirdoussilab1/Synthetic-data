@@ -238,32 +238,23 @@ def test_expectation_2_toy(n, m, p, mu, epsilon, rho, phi, gamma):
     # Quantities
     a = pi / (1 + delta) + alpha * (1 - pi) / (1 + delta_s)
     b = gamma + pi / (1 + delta) + alpha * (1 - pi) / ((1 + delta_s) * (1 + delta_bar))
+    c = pi / (1 + delta) + lam * (1 - pi) / (1 + delta_s)
     h_bar = 1 - (alpha * (1 - pi) / ((1 + delta_s) * (1 + delta_bar)))**2 * (p / (n * b**2))
     
     # 1/N Tr(Q_bar**2)
     t = eta / b**2
     a_1 = pi * t / (h_bar * (1 + delta)**2) 
-    a_2 = pi * t / (h_bar * (1 + delta)**2 * (1 + delta_bar)**2 )
     b_1 = alpha * (1 - pi) * t / (h_bar * (1 + delta_s)**2 * (1 + delta_bar)**2)
     b_2 = alpha * (1 - pi) * t / (h_bar * (1 + delta_s)**2 * (1 + delta_bar)**2)
     h = 1 - a_1 - b_2
-    T_1 = a_1 * (1 + delta)**2 / (pi * h)
-    T_2 = a_1 * (1 + delta_s)**2 / (alpha * (1 - pi) * h)
 
     mu_q_mu = mu**2 / (b + a * mu**2)
     mu_q_2_mu = mu**2 / (b + a * mu**2)**2
 
-    # Final terms
-    r_1 = (pi / (1 + delta) + lam * (1 - pi) / (1 + delta_s)) **2 / h
-    s_1 = (1 + b_1 - b_2) * mu_q_mu**2 + (1 - b_2 + b_1 / (1 + delta_bar)**2) * mu_q_2_mu / h_bar
+    r = c * mu**2 / (h * (b + a * mu**2)**2) 
+    s = c * (1 + b_1 - b_2) * mu**2 + c / h_bar - 2 * (a_1 + lam * b_1 / alpha) * (b + a * mu**2) 
 
-    r_2 = pi * T_1 / (1 + delta)**2
-    s_2 = 1 - 2* pi * mu_q_mu / (1 + delta) - 2 * lam * (1 - pi) * mu_q_mu / (1 + delta_s)
-
-    r_3 = (1 - pi) * T_2 / (1 + delta_s)**2
-    s_3 = alpha - 2 * lam**2 * (1 - pi) * mu_q_mu / (1 + delta_s) - 2 * lam * pi * mu_q_mu / (1 + delta)
-
-    return r_1 * s_1 + r_2 * s_2 + r_3 * s_3
+    return r * s + (a_1 + b_1) / h
 
 def test_accuracy_toy(n, m, p, mu, epsilon, rho, phi, gamma):
     # E[g] and E[g^2]
