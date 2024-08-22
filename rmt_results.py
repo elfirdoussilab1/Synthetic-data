@@ -246,9 +246,9 @@ def test_expectation_2_toy(n, m, p, mu, epsilon, rho, phi, gamma):
     a_2 = pi * t / (h_bar * (1 + delta)**2 * (1 + delta_bar)**2 )
     b_1 = alpha * (1 - pi) * t / (h_bar * (1 + delta_s)**2 * (1 + delta_bar)**2)
     b_2 = alpha * (1 - pi) * t / (h_bar * (1 + delta_s)**2 * (1 + delta_bar)**2)
-    h = (1 - a_1) * (1 - b_2) - a_2 * b_1
-    T_1 = (1 + delta)**2 * (a_1 * (1 - b_2) + a_2 * b_1) / (pi * h)
-    T_2 = (1 + delta_s)**2 * b_1 / (alpha * (1 - pi) * h)
+    h = 1 - a_1 - b_2
+    T_1 = a_1 * (1 + delta)**2 / (pi * h)
+    T_2 = a_1 * (1 + delta_s)**2 / (alpha * (1 - pi) * h)
 
     mu_q_mu = mu**2 / (b + a * mu**2)
     mu_q_2_mu = mu**2 / (b + a * mu**2)**2

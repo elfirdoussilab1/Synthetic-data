@@ -35,31 +35,13 @@ beta = np.sum(vmu * vmu_hat) / mu**2
 print(beta)
 
 # Checking Test Risk
-batch = 1
+batch = 5
 risk_emps = []
 risk_theory = []
 gammas = np.logspace(-6, 2, 20)
 
 for gamma in tqdm(gammas):
-    res = 0
-    for i in range(batch):
-        #X, y = gaussian_mixture(n, vmu, None, real = True) # As if we have other samples ! Divide our dataset by 2
-        #vmu_hat = np.sum(y_r * X_r, axis = 1) / n
-        #C = (vmu_hat * np.ones((n, p)) ).T
-        #cov = (y * X - C) @ (y * X - C).T / n
-        # covariance
-        Z = np.random.randn(p, n)
-        cov = Z @ Z.T / n
-        #C = (vmu_hat * np.ones((n, p)) ).T 
-        #cov = (y_r * X_r - C) @ (y_r * X_r - C).T / n
-
-        # Synthetic dataset
-        (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, vmu, vmu_hat, cov, epsilon, rho, phi)
-        
-        # Classifier
-        w = classifier_vector(X_r, y_r, X_s, y_tilde, vq, gamma)
-        res += L2_loss(w, X_test, y_test)
-    risk_emps.append(res / batch)
+    risk_emps.append(empirical_risk_toy(batch, n, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma))
     risk_theory.append(test_risk_toy(n, m, p, mu, epsilon, rho, phi, gamma))
 
 # Plotting results

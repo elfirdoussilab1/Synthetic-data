@@ -8,13 +8,13 @@ from tqdm.auto import tqdm
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 
 # Parameters
-n = 1000
+n = 5000
 mu = 0.7
 gamma = 1
-batch = 5
+batch = 1
 
-N = 5000
-ps = [50, 200, 500]
+N = 50000
+ps = [50, 500, 1000]
 pis = np.linspace(0.001, 0.9, 50)
 
 fig, ax = plt.subplots(1, 2, figsize = (15, 5))
