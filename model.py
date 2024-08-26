@@ -38,9 +38,10 @@ class Head(nn.Module):
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
 
-    def __init__(self, num_heads, head_size, d_embd):
+    def __init__(self, num_heads, d_embd, seq_length):
         super().__init__()
-        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)]) # head_size * num_heads = d_embd
+        head_size = d_embd // num_heads
+        self.heads = nn.ModuleList([Head(head_size, d_embd, seq_length) for _ in range(num_heads)]) # head_size * num_heads = d_embd
         self.proj = nn.Linear(d_embd, d_embd)
 
     def forward(self, x):
@@ -63,10 +64,9 @@ class MLP(nn.Module):
         return x
 
 class Block(nn.Module):
-    def __init__(self, d_embd, num_heads):
+    def __init__(self, d_embd, num_heads, seq_length):
         super().__init__()
-        head_size = d_embd // num_heads
-        self.sa = MultiHeadAttention(num_heads, head_size, d_embd)
+        self.sa = MultiHeadAttention(num_heads, d_embd, seq_length)
         self.mlp = MLP(d_embd)
         self.ln1 = nn.LayerNorm(d_embd)
         self.ln2 = nn.LayerNorm(d_embd)
@@ -91,7 +91,7 @@ class GPT(nn.Module):
         self.token_embedding = nn.Embedding(vocab_size, d_embd)
         self.positional_encoding = nn.Embedding(seq_length, d_embd)
 
-        self.transformer = nn.ModuleList([Block(d_embd, num_heads) for _ in range(n_layer)])
+        self.transformer = nn.ModuleList([Block(d_embd, num_heads, seq_length) for _ in range(n_layer)])
 
         self.lm_head = nn.Linear(d_embd, vocab_size, bias = False) # Final classifier
 
@@ -102,7 +102,7 @@ class GPT(nn.Module):
         if isinstance(module, nn.Linear):
             std = 0.02
             if hasattr(module, 'NANOGPT_SCALE_INIT'):
-                std *= (2 * self.config.n_layer) ** -0.5 # Reduce std when w have Residual connections
+                std *= (2 * self.n_layer) ** -0.5 # Reduce std when w have Residual connections
             torch.nn.init.normal_(module.weight, mean = 0.0, std = std)
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
@@ -116,7 +116,8 @@ class GPT(nn.Module):
         pos_embd = self.positional_encoding(torch.arange(T, device = self.device)) # (T, d_embd)
         x = tok_embd + pos_embd
 
-        x = self.transformer(x)
+        for block in self.transformer:
+            x = block(x)
         logits = self.lm_head(x)
 
         if targets is None:

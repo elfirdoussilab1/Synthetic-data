@@ -43,7 +43,7 @@ class SimpleGrammar:
                     l.append(name)
         return l
  
-def generate_data(num_samples, grammar, max_length):
+def generate_grammar_data(num_samples, grammar, max_length):
     data = []
     for _ in range(num_samples):
         sentence = []

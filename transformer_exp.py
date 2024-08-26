@@ -3,7 +3,8 @@ from dataset import *
 import torch.optim as optim
 import math
 import wandb
-from utils import *
+from utils import fix_seed
+from tqdm.auto import tqdm
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
@@ -29,12 +30,13 @@ num_heads = 4
 n_layer = 2
 batch_size = 32
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device ="cuda" if torch.cuda.is_available() else "cpu"
+print("Using device : ", device)
 
 # Datasets
 grammar = SimpleGrammar(vocab_size)
-train_data = generate_data(1000000, grammar, seq_length + 1) # samples of length seq_length + 1
-val_data = generate_data(10000, grammar, seq_length + 1)
+train_data = generate_grammar_data(1000000, grammar, seq_length + 1) # samples of length seq_length + 1
+val_data = generate_grammar_data(10000, grammar, seq_length + 1)
 
 def get_batch(split, batch_size):
     data = train_data if split == 'train' else val_data
@@ -43,15 +45,16 @@ def get_batch(split, batch_size):
     y = data[idx : idx + batch_size , 1:]
     return x, y
 
-def get_val_loss(model, batch):
+def evaluate_loss(split, model, batch):
     model.eval()
-    n = len(val_data) // batch
+    data = train_data if split == 'train' else val_data
+    n = len(data) // batch
     loss_accum = 0
-    for idx in range(0, len(val_data), batch):
-        x = val_data[idx : idx + batch_size, :-1].to(device)
-        y = val_data[idx : idx + batch_size , 1:].to(device)
+    for idx in range(0, len(data), batch):
+        x = data[idx : idx + batch_size, :-1].to(device)
+        y = data[idx : idx + batch_size , 1:].to(device)
         logits, loss = model(x, y)
-        loss_accum += loss
+        loss_accum += loss.item()
     return loss_accum / n
 
 
@@ -77,15 +80,26 @@ def get_lr(step):
     return min_lr + coeff * (max_lr - min_lr)
 
 # Optimizer
-optimizer = optim.AdamW(model.parameters(), lr = max_lr, device = device, fused= True)
+optimizer = optim.AdamW(model.parameters(), lr = max_lr, fused= True)
+
+# # First evaluation
+# model.eval()
+# with torch.no_grad():
+#     train_loss = evaluate_loss('train', model, 100)
+#     val_loss = evaluate_loss('val', model, 100)
+#     print("Train loss", train_loss)
+#     print("Train loss", val_loss)
+#     wandb.log({"Train Loss" : train_loss, "Test Loss": val_loss})
 
 
-for step in range(max_steps):
-    if step % 10 == 0:
+for step in tqdm(range(max_steps)):
+    if step % 50 == 0:
         model.eval()
         with torch.no_grad():
-            val_loss = get_val_loss(model, 100)
-            # TODO: Load it to wandb
+            train_loss = evaluate_loss('train', model, 100)
+            val_loss = evaluate_loss('val', model, 100)
+            print("Train loss", train_loss)
+            wandb.log({"Train Loss" : train_loss, "Test Loss": val_loss})
     
     model.train()
     optimizer.zero_grad()
@@ -104,7 +118,7 @@ for step in range(max_steps):
     optimizer.step()
 
 # Saving the final model
-torch.save(model.state_dict(), 'transformer-grammar.pth')
+torch.save(model.state_dict(), f'transformer-grammar_p_{d_embd}.pth')
 
 
 
