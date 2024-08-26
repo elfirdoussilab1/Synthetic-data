@@ -64,8 +64,8 @@ model = GPT(vocab_size, d_embd, num_heads, seq_length, n_layer, device).to(devic
 # Learning-rate scheduler
 max_lr = 6e-4
 min_lr = max_lr * 0.1
-warmup_steps = 1000
-max_steps = 10000
+warmup_steps = 500
+max_steps = 2000
 def get_lr(step):
     # 1) Liner warmup for warmup_iters steps
     if step < warmup_steps:
