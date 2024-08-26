@@ -89,11 +89,3 @@ ax[0].grid()
 ax[1].grid()
 path = './study-plot' + f'/toy-setting-n-{n}-N-{N}-mu-{mu}-gamma-{gamma}.pdf'
 fig.savefig(path, bbox_inches='tight')
-
-
-
-        
-
-
-
-

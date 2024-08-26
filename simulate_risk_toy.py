@@ -54,6 +54,3 @@ ax.grid(True)
 ax.legend()
 path = './study-plot/' + f'simulate_risk-toy-n-{n}-m-{m}-p-{p}-beta-{beta}-mu-{mu}-epsilon-{epsilon}-rho-{rho}-phi-{phi}.pdf'
 fig.savefig(path, bbox_inches='tight')
-
-
-

@@ -1,11 +1,13 @@
 # In this file, we will implement util functions
 import numpy as np
 import random
+import torch
 
 # Seed fixing
 def fix_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
+    torch.manual_seed(seed)
 
 # Gaussian mixture generation
 def gaussian_mixture(n, vmu, cov, real = True):
