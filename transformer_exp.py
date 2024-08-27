@@ -119,13 +119,3 @@ for step in tqdm(range(max_steps)):
 
 # Saving the final model
 torch.save(model.state_dict(), f'transformer-grammar_p_{d_embd}.pth')
-
-
-
-
-
-
-
-
-
-
