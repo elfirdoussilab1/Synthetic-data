@@ -23,11 +23,10 @@ weight_decay = 1e-5
 num_steps = 500
 eval_delta = 10
 grad_clip = 1
-
-# Learning rate
 lr = 1e-3
 
 # Datasets & DataLoaders
+n = 1000
 m = 0
 m_estim = None
 train_data = MNIST_generator(m, device, train = True)
@@ -46,7 +45,7 @@ wandb.init(
         "architecture": "NN",
         "dataset": "MNIST"
         },
-        name = f"m = {m}, m_estim = {m_estim}"
+        name = f"n = {n}, m = {m}, m_estim = {m_estim}"
     )
 results = pd.DataFrame()
 # Model
@@ -132,5 +131,18 @@ for step in tqdm(range(num_steps)):
     norm = torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip) # clipping threshold is grad_clip
     optimizer.step()
 
+    if step == num_steps -1: # Last step
+        with torch.no_grad():
+            train_loss = evaluate_loss(model, "train")
+            test_loss = evaluate_loss(model, "test")
+            train_acc = evaluate_accuracy(model, "train")
+            test_acc = evaluate_accuracy(model, "test")
+            wandb.log({"Train Loss": train_loss, "Test Loss" : test_loss, "Train Accuracy": train_acc, "Test Accuracy": test_acc})
+
+            # Add to results csv
+            row = {'n': n, 'm': m, 'm_estim': m_estim,
+                   'Train Loss': train_loss, 'Test Loss': test_loss,
+                   'Train Accuracy': train_acc, 'Test Accuracy': test_acc}
+            
 # Saving the final model
-torch.save(model.state_dict(), f'mnist-m-{m}-m_estim-{m_estim}.pth')
+torch.save(model.state_dict(), f'mnist-n-{n}-m-{m}-m_estim-{m_estim}.pth')

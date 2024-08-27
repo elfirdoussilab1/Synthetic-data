@@ -69,7 +69,6 @@ class MNIST_generator(Dataset):
         if m_estim is not None:
             assert m > m_estim
         
-        self.m = m
         self.device = device
 
         # Load the train data
@@ -77,7 +76,8 @@ class MNIST_generator(Dataset):
         y_r = data.targets.cpu().detach().numpy()
 
         X_r = data.data.cpu().detach().numpy() # (N, 28, 28)
-        X_r = X_r.reshape(X_r.shape[0], -1)
+        N = X_r.shape[0]
+        X_r = X_r.reshape(N , -1)
         p = X_r.shape[1]
         X_r = X_r.astype(float)
 
@@ -91,7 +91,8 @@ class MNIST_generator(Dataset):
 
                 X_real = np.vstack((X_real, X))
                 y_real = y_real + y
-        
+        y_real = np.array(y_real)
+
         # Synthetic dataset
         X_s = np.empty((0, p))
         y_s = []
