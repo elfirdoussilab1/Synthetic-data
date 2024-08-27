@@ -64,6 +64,8 @@ def evaluate_accuracy(model, split):
 
     for X, y in loader:
         logits = model(X)
+        print(logits.shape)
+        exit(0)
         _, predicted = torch.max(logits, dim = 1)
         acc += (predicted == y).sum().item()
 
@@ -96,10 +98,10 @@ for step in tqdm(range(num_steps)):
     model.train()
     optimizer.zero_grad()
 
-    batch = next(iter)
+    batch = next(train_iter)
     if batch is None:
         train_iter = iter(train_loader)
-        batch = next(iter)
+        batch = next(train_iter)
     x, y = batch
     logits = model(x)
     loss = loss_fn(logits, y)
