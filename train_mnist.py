@@ -118,8 +118,9 @@ for step in tqdm(range(num_steps)):
     #for param_group in optimizer.param_groups:
     #    param_group['lr'] = lr
 
-    batch = next(train_iter)
-    if batch is None:
+    try :
+        batch = next(train_iter)
+    except:
         train_iter = iter(train_loader)
         batch = next(train_iter)
     x, y = batch
@@ -143,6 +144,9 @@ for step in tqdm(range(num_steps)):
             row = {'n': n, 'm': m, 'm_estim': m_estim,
                    'Train Loss': train_loss, 'Test Loss': test_loss,
                    'Train Accuracy': train_acc, 'Test Accuracy': test_acc}
+            result = pd.read_csv('results.csv')
+            df = pd.concat([result, pd.DataFrame([row])], ignore_index= True)
+            df.to_csv('results.csv', index = False)
             
 # Saving the final model
 torch.save(model.state_dict(), f'mnist-n-{n}-m-{m}-m_estim-{m_estim}.pth')
