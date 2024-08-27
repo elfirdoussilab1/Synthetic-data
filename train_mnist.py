@@ -127,6 +127,9 @@ for step in tqdm(range(num_steps)):
     logits = model(x)
     loss = loss_fn(logits, y)
     loss.backward()
+
+    # Gradient clipping
+    norm = torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip) # clipping threshold is grad_clip
     optimizer.step()
 
 # Saving the final model
