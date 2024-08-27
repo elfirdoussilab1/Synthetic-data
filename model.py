@@ -148,11 +148,18 @@ class GPT(nn.Module):
         return idx
 
         
-
-
-
-
-
-
-
+# Simple NN for MNIST classification
+class Mnist_Model(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear = nn.Linear(28*28, 128)
+        self.relu = nn.ReLU()
+        self.output = nn.Linear(128, 10)
+    
+    def forward(self, x):
+        # x of shape (B, 28*28)
+        x = self.linear(x)
+        x = self.relu(x)
+        logits = self.output(x)
+        return logits
 

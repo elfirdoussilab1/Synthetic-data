@@ -2,6 +2,9 @@
 import torch
 import numpy as np
 import random
+from torchvision import datasets
+from torchvision.transforms import ToTensor
+from torch.utils.data import Dataset
 
 # Generate synthetic data with hierarchical structure
 class SimpleGrammar:
@@ -56,3 +59,74 @@ def generate_grammar_data(num_samples, grammar, max_length):
         sentence = [min(token, grammar.vocab_size - 1) for token in sentence]
         data.append(sentence)
     return torch.LongTensor(data)
+
+############ MNIST dataset generator ############
+class MNIST_generator(Dataset):
+    def __init__(self, m, device, train = True, m_estim = None, estimate_cov = False):
+        # N_estim is the number of synthetic samples PER-CLASS to use to estimate covariance
+        # m is the number of synthetic samples to add per-class
+        if m_estim is not None:
+            assert m > m_estim
+        
+        self.m = m
+        self.device = device
+
+        # Load the train data
+        data = datasets.MNIST(root = "data", train = train, download= True, transform= ToTensor())
+        y_r = data.targets.cpu().detach().numpy()
+
+        X_r = data.data.cpu().detach().numpy() # (n, 28, 28)
+        n = X_r.shape[0]
+        X_r = X_r.reshape(n, -1)
+        p = X_r.shape[1]
+        X_r = X_r.astype(float)
+
+        # Synthetic dataset
+        X_s = np.empty((0, p))
+        y_s = []
+        if train: 
+            for k in range(10):
+                X = X_r[y_r == k]
+
+                # estimate the mean
+                vmu_k = np.mean(X, axis = 0)
+
+                # generate m samples of class k
+                X_k_syn = np.random.multivariate_normal(mean = vmu_k, cov = np.eye(p), size = m)
+                y_k_syn = [k] * len(X_k_syn)
+
+                if estimate_cov:
+                    # Take m_estim only
+                    X_k_syn = X_k_syn[:m_estim]
+                    X = np.vstack((X, X_k_syn)) # shape (n + m_estim, p)
+
+                    # Estimate the mean again
+                    vmu_k = np.mean(X, axis = 0)
+                    cov_k = (X - vmu_k).T @ (X  -vmu_k)/ (X.shape[0] - 1)
+                    Z = np.random.multivariate_normal(mean = vmu_k, cov = cov_k, size = m - m_estim)
+                    X_k_syn = np.vstack((X_k_syn, Z)) # shaoe (m, p)
+
+                # Add to the final dataset
+                assert X_k_syn.shape[0] == m
+                X_s = np.vstack((X_s, X_k_syn))
+                y_s = y_s + y_k_syn
+
+        y_s = np.array(y_s)
+        # Separate
+        self.X_s = X_s
+        self.y_s = y_s
+        self.X_r = X_r
+        self.y_r = y_r
+
+        # Merged
+        self.X = np.vstack((X_r, X_s))
+        self.y = np.hstack((y_r, y_s))
+    
+    def __len__(self):
+        return len(self.y)
+    
+    def __getitem__(self, index):
+        x = torch.tensor(self.X[index], dtype = torch.float)
+        y = torch.tensor(self.y[index], dtype= torch.long)
+        return x.to(self.device), y.to(self.device)
+
