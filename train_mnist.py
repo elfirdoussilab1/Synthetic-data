@@ -6,6 +6,8 @@ from model import *
 from  utils import fix_seed
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
+import pandas as pd
+import math
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
@@ -18,8 +20,9 @@ print("Using device : ", device)
 # Hyperparameters
 batch_size = 64
 weight_decay = 1e-5
-num_steps = 1000
+num_steps = 500
 eval_delta = 10
+grad_clip = 1
 
 # Learning rate
 lr = 1e-3
@@ -45,9 +48,26 @@ wandb.init(
         },
         name = f"m = {m}, m_estim = {m_estim}"
     )
-
+results = pd.DataFrame()
 # Model
 model = Mnist_Model().to(device)
+
+# Learning rate schedular
+# max_lr = 4e-3
+# min_lr = 1e-4
+# warmup_steps = 100
+# def get_lr(step):
+#     # 1) Liner warmup for warmup_iters steps
+#     if step < warmup_steps:
+#         return max_lr * (step + 1)/ warmup_steps
+#     # 2) if step > lr_decay_iters, return min learning rate
+#     if step > num_steps:
+#         return min_lr
+#     # 3) in between, use cosine decay down to min learning rate
+#     decay_ratio = (step - warmup_steps) / (num_steps - warmup_steps)
+#     assert 0 <= decay_ratio <= 1
+#     coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and gets to 0
+#     return min_lr + coeff * (max_lr - min_lr)
 
 # Loss and optimizer
 loss_fn = nn.CrossEntropyLoss()
@@ -83,7 +103,7 @@ def evaluate_loss(model, split):
 train_iter = iter(train_loader)
 
 for step in tqdm(range(num_steps)):
-    if step % eval_delta:
+    if step % eval_delta == 0:
         with torch.no_grad():
             train_loss = evaluate_loss(model, "train")
             test_loss = evaluate_loss(model, "test")
@@ -94,6 +114,11 @@ for step in tqdm(range(num_steps)):
     model.train()
     optimizer.zero_grad()
 
+    # Update learning rate
+    #lr = get_lr(step)
+    #for param_group in optimizer.param_groups:
+    #    param_group['lr'] = lr
+
     batch = next(train_iter)
     if batch is None:
         train_iter = iter(train_loader)
@@ -102,6 +127,9 @@ for step in tqdm(range(num_steps)):
     logits = model(x)
     loss = loss_fn(logits, y)
     loss.backward()
+
+    # Gradient clipping
+    norm = torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip) # clipping threshold is grad_clip
     optimizer.step()
 
 # Saving the final model

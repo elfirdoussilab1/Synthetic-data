@@ -62,8 +62,9 @@ def generate_grammar_data(num_samples, grammar, max_length):
 
 ############ MNIST dataset generator ############
 class MNIST_generator(Dataset):
-    def __init__(self, m, device, train = True, m_estim = None, estimate_cov = False):
-        # N_estim is the number of synthetic samples PER-CLASS to use to estimate covariance
+    def __init__(self, n, m, device, train = True, m_estim = None, estimate_cov = False):
+        # n is the number of real data per-class !
+        # m_estim is the number of synthetic samples PER-CLASS to use to estimate covariance
         # m is the number of synthetic samples to add per-class
         if m_estim is not None:
             assert m > m_estim
@@ -75,18 +76,28 @@ class MNIST_generator(Dataset):
         data = datasets.MNIST(root = "data", train = train, download= True, transform= ToTensor())
         y_r = data.targets.cpu().detach().numpy()
 
-        X_r = data.data.cpu().detach().numpy() # (n, 28, 28)
-        n = X_r.shape[0]
-        X_r = X_r.reshape(n, -1)
+        X_r = data.data.cpu().detach().numpy() # (N, 28, 28)
+        X_r = X_r.reshape(X_r.shape[0], -1)
         p = X_r.shape[1]
         X_r = X_r.astype(float)
 
+        # If train, select only n per class
+        X_real = np.empty((0, p))
+        y_real = []
+        if train:
+            for k in range(10):
+                X = X_r[y_r == k][:n]
+                y = [k] * n
+
+                X_real = np.vstack((X_real, X))
+                y_real = y_real + y
+        
         # Synthetic dataset
         X_s = np.empty((0, p))
         y_s = []
         if train: 
             for k in range(10):
-                X = X_r[y_r == k]
+                X = X_real[y_real == k]
 
                 # estimate the mean
                 vmu_k = np.mean(X, axis = 0)
@@ -115,12 +126,12 @@ class MNIST_generator(Dataset):
         # Separate
         self.X_s = X_s
         self.y_s = y_s
-        self.X_r = X_r
-        self.y_r = y_r
+        self.X_real = X_real
+        self.y_real = y_real
 
         # Merged
-        self.X = np.vstack((X_r, X_s))
-        self.y = np.hstack((y_r, y_s))
+        self.X = np.vstack((X_real, X_s))
+        self.y = np.hstack((y_real, y_s))
     
     def __len__(self):
         return len(self.y)
