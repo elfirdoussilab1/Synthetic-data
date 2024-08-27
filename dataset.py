@@ -84,16 +84,20 @@ class MNIST_generator(Dataset):
         # If train, select only n per class
         X_real = np.empty((0, p))
         y_real = []
-        if train:
-            for k in range(10):
-                X = X_r[y_r == k][:n]
-                y = [k] * n
+        if n <= 5000:
+            if train:
+                for k in range(10):
+                    X = X_r[y_r == k][:n]
+                    y = [k] * n
 
-                X_real = np.vstack((X_real, X))
-                y_real = y_real + y
-            y_real = np.array(y_real)
+                    X_real = np.vstack((X_real, X))
+                    y_real = y_real + y
+                y_real = np.array(y_real)
 
-        else: # test
+            else: # test
+                X_real = X_r
+                y_real = y_r
+        else: # Take all samples
             X_real = X_r
             y_real = y_r
         
