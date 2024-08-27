@@ -4,8 +4,6 @@ import wandb
 from dataset import *
 from model import *
 from  utils import fix_seed
-from torchvision import datasets
-from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
@@ -59,13 +57,11 @@ optimizer = torch.optim.SGD(model.parameters(), lr = lr, weight_decay=weight_dec
 def evaluate_accuracy(model, split):
     model.eval()
     acc = 0
-    loader = train_data if split == "train" else test_loader
-    n = len(train_data) if split == "train" else len(test_data)
+    loader = train_loader if split in "train" else test_loader
+    n = len(train_data) if split in "train" else len(test_data)
 
     for X, y in loader:
         logits = model(X)
-        print(logits.shape)
-        exit(0)
         _, predicted = torch.max(logits, dim = 1)
         acc += (predicted == y).sum().item()
 
@@ -74,8 +70,8 @@ def evaluate_accuracy(model, split):
 def evaluate_loss(model, split):
     model.eval()
     loss_accum = 0
-    loader = train_data if split == "train" else test_loader
-    n = len(train_data) if split == "train" else len(test_data)
+    loader = train_loader if split in "train" else test_loader
+    n = len(train_data) if split in "train" else len(test_data)
     for X, y in loader:
         logits = model(X)
         loss = loss_fn(logits, y)
