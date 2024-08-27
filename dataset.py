@@ -91,8 +91,12 @@ class MNIST_generator(Dataset):
 
                 X_real = np.vstack((X_real, X))
                 y_real = y_real + y
-        y_real = np.array(y_real)
+            y_real = np.array(y_real)
 
+        else: # test
+            X_real = X_r
+            y_real = y_r
+        
         # Synthetic dataset
         X_s = np.empty((0, p))
         y_s = []

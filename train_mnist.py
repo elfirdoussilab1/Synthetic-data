@@ -29,8 +29,8 @@ lr = 1e-3
 n = 1000
 m = 0
 m_estim = None
-train_data = MNIST_generator(m, device, train = True)
-test_data = MNIST_generator(m = 0, device = device, train = False)
+train_data = MNIST_generator(n, m, device, train = True)
+test_data = MNIST_generator(n, m = 0, device = device, train = False)
 
 # Dataloaders
 train_loader = DataLoader(train_data, batch_size= batch_size, shuffle= True)
