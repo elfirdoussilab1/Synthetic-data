@@ -2,6 +2,7 @@
 import numpy as np
 import random
 import torch
+import math
 
 # Seed fixing
 def fix_seed(seed):
@@ -166,4 +167,16 @@ def empirical_accuracy_toy(batch, n, m, p, vmu, X_r, y_r, epsilon, rho, phi, gam
         res += accuracy(y_test, decision(w, X_test))
     return res / batch
 
-    
+# Learning rate schedular
+def get_lr(step, max_lr, min_lr, warmup_steps, num_steps):
+        # 1) Liner warmup for warmup_iters steps
+        if step < warmup_steps:
+            return max_lr * (step + 1)/ warmup_steps
+        # 2) if step > lr_decay_iters, return min learning rate
+        if step > num_steps:
+            return min_lr
+        # 3) in between, use cosine decay down to min learning rate
+        decay_ratio = (step - warmup_steps) / (num_steps - warmup_steps)
+        assert 0 <= decay_ratio <= 1
+        coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and gets to 0
+        return min_lr + coeff * (max_lr - min_lr)

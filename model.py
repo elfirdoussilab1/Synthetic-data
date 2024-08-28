@@ -162,4 +162,16 @@ class Mnist_Model(nn.Module):
         x = self.relu(x)
         logits = self.output(x)
         return logits
+    
+class log_reg(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear = nn.Linear(28*28, 10)
+        self.tanh = nn.Sigmoid()
+    
+    def forward(self, x):
+        x = self.linear(x)
+        logits = self.tanh(x)
+        return logits
+        
 

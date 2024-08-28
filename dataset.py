@@ -67,7 +67,7 @@ class MNIST_generator(Dataset):
         # m_estim is the number of synthetic samples PER-CLASS to use to estimate covariance
         # m is the number of synthetic samples to add per-class
         if m_estim is not None:
-            assert m > m_estim
+            assert m >= m_estim
         
         self.device = device
 
