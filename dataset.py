@@ -5,6 +5,7 @@ import random
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 from torch.utils.data import Dataset
+from model import *
 
 # Generate synthetic data with hierarchical structure
 class SimpleGrammar:
@@ -141,6 +142,99 @@ class MNIST_generator(Dataset):
         # Merged
         self.X = np.vstack((X_real, X_s))
         self.y = np.hstack((y_real, y_s))
+    
+    def __len__(self):
+        return len(self.y)
+    
+    def __getitem__(self, index):
+        x = torch.tensor(self.X[index], dtype = torch.float)
+        y = torch.tensor(self.y[index], dtype= torch.long)
+        return x.to(self.device), y.to(self.device)
+
+
+class MNIST_GAN(Dataset):
+    def __init__(self, n, m, device, train = True, supervision = False, threshold = 0.):
+        # supervision: using the discrimator as a verifier
+        super().__init__()
+
+        self.device = device
+        # Load the train data
+        data = datasets.MNIST(root = "data", train = train, download= True, transform= ToTensor())
+        y_r = data.targets.cpu().detach().numpy()
+        X_r = data.data.cpu().detach().numpy() # (N, 28, 28)
+        X_r = X_r.reshape(len(y_r), -1) # (N, 28 * 28)
+        X_r = X_r.astype(float)
+        p = X_r.shape[1]
+
+        # Real data
+        # If train, select only n per class
+        X_real = np.empty((0, p))
+        y_real = []
+        if n <= 5000 and train:
+            for k in range(10):
+                X = X_r[y_r == k][:n]
+                y = [k] * len(X)
+
+                X_real = np.vstack((X_real, X))
+                y_real = y_real + y
+            y_real = np.array(y_real)
+
+        else: # test or n > 5000
+            X_real = X_r
+            y_real = y_r
+        
+        # Synthetic dataset
+        X_s = np.empty((0, p))
+        y_s = []
+        if train:
+            for k in range(10):
+                # Load Generator
+                g_k = Generator(in_features=784, out_features=784)
+                state_dict = torch.load(f'./mnist_models/gan-generator-mnist-cl-{k}.pth')
+                g_k.load_state_dict(state_dict)
+
+                # Load Discriminator
+                d_k = Discriminator(in_features=784, out_features=1)
+                state_dict = torch.load(f'./mnist_models/gan-discriminator-mnist-cl-{k}.pth')
+                d_k.load_state_dict(state_dict)
+
+                # Generate m samples
+                Z = np.random.uniform(-1, 1, size=(m, 784))
+                Z = torch.from_numpy(Z).float()
+                fake_images = g_k(Z) # shape (m, 784)
+                
+                if supervision:
+                    ops = d_k(fake_images).view(-1) # shape (m,)
+                    ops = ops.cpu().detach().numpy() >= threshold
+                    # Images to keep are of ops >= 0
+                    fake_images = fake_images[ops] # shape (<m, 784)
+                fake_images = fake_images.cpu().detach().numpy()
+
+                # Add them to the dataset
+                X_s = np.vstack((X_s, fake_images))
+                labels = [k] * fake_images.shape[0]
+                y_s = y_s + labels
+
+            # Add them to the dataset
+            X_s = np.vstack((X_s, fake_images))
+            labels = [k] * fake_images.shape[0]
+            y_s = y_s + labels
+        y_s = np.array(y_s)
+        # Separate
+        self.X_s = X_s
+        self.y_s = y_s
+        self.X_real = X_real
+        self.y_real = y_real
+
+        # Merged
+        self.X = np.vstack((X_real, X_s))
+        self.y = np.hstack((y_real, y_s))
+
+        # Shuffle
+        idx = np.arange(0, len(self.y))
+        random.shuffle(idx)
+        self.X = self.X[idx]
+        self.y = self.y[idx]
     
     def __len__(self):
         return len(self.y)

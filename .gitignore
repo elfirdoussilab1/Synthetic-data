@@ -6,3 +6,4 @@ wandb
 *.error
 *.out
 data
+*.pkl
