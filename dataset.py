@@ -282,10 +282,6 @@ class MNIST_GAN(Dataset):
                 labels = [k] * fake_images.shape[0]
                 y_s = y_s + labels
 
-            # Add them to the dataset
-            X_s = np.vstack((X_s, fake_images))
-            labels = [k] * fake_images.shape[0]
-            y_s = y_s + labels
         y_s = np.array(y_s)
         # Separate
         self.X_s = X_s
@@ -310,4 +306,55 @@ class MNIST_GAN(Dataset):
         x = torch.tensor(self.X[index], dtype = torch.float)
         y = torch.tensor(self.y[index], dtype= torch.long)
         return x.to(self.device), y.to(self.device)
+
+class MNIST_verifier_data(Dataset):
+    def __init__(self, m, train, device):
+        super().__init__()
+        self.device = device
+
+        data = datasets.MNIST(root = "data", train = train, download= True, transform= ToTensor())
+        self.X_r = data.data.cpu().detach().numpy() # shape (n, p)
+        n, p = self.X_r.shape
+        self.y_r = np.ones(n)
+
+        # Generating synthetic samples
+        X_s = np.empty((0, p))
+        self.y_s = np.zeros(m)
+
+        if m > 0:
+            for k in range(10):
+                # Load Generator
+                g_k = Generator(in_features=784, out_features=784)
+                state_dict = torch.load(f'./mnist_models/gan-generator-mnist-cl-{k}.pth', weights_only= True)
+                g_k.load_state_dict(state_dict)
+
+                # Generate m samples
+                Z = np.random.uniform(-1, 1, size=(m, 784))
+                Z = torch.from_numpy(Z).float()
+                fake_images = g_k(Z) # shape (m, 784)
+                fake_images = fake_images.cpu().detach().numpy()
+
+                # Add them to the dataset
+                X_s = np.vstack((X_s, fake_images))
+
+        self.X_s = X_s
+
+        # Merge
+        self.X = np.vstack((self.X_r, self.X_s))
+        self.y = np.hstack((self.y_r, self.y_s))
+
+        # Shuffle
+        idx = np.arange(0, len(self.y))
+        random.shuffle(idx)
+        self.X = self.X[idx]
+        self.y = self.y[idx]
+
+    def __len__(self):
+        return len(self.y)
+    
+    def __getitem__(self, index):
+        x = torch.tensor(self.X[index], dtype = torch.float)
+        y = torch.tensor(self.y[index], dtype= torch.long)
+        return x.to(self.device), y.to(self.device)
+        
 
