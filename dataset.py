@@ -6,6 +6,10 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor
 from torch.utils.data import Dataset
 from model import *
+from scipy.io import loadmat
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+import utils
 
 # Generate synthetic data with hierarchical structure
 class SimpleGrammar:
@@ -60,6 +64,60 @@ def generate_grammar_data(num_samples, grammar, max_length):
         sentence = [min(token, grammar.vocab_size - 1) for token in sentence]
         data.append(sentence)
     return torch.LongTensor(data)
+
+############ Amazon Review dataset generator ############
+class Amazon:
+    def __init__(self, n, name) :
+        # name is either: books, dvd, elec or kitchen
+        self.n = n
+        self.name = name
+        # Load the dataset
+        data = loadmat(f'./data/Amazon/{name}.mat')
+        self.X = data['fts'] # shape (N, p)
+
+        # Labels
+        self.y = data['labels'].reshape((len(self.X), )).astype(int) # shape (n, ), features are sorted by reversed order (ones then zeros)
+        self.y = 1 - 2 * self.y
+
+        # Preprocessing
+        sc = StandardScaler()
+        self.X = sc.fit_transform(self.X)
+        self.vmu_2 = np.mean(self.X[self.y > 0], axis = 0)
+        self.vmu_1 = np.mean(self.X[self.y < 0], axis = 0)
+        self.vmu = (self.vmu_2 - self.vmu_1) / 2
+        self.mu = np.sqrt(abs(np.inner(self.vmu_1 , self.vmu_2)))
+
+        # Train Test split
+        self.X_r, self.X_test, self.y_r, self.y_test = train_test_split(self.X, self.y, train_size = n / len(self.y))
+    
+    def generate_synth_data(self, m, epsilon, rho, phi):
+        # Estimate covariance matrix
+        p = self.X.shape[1]
+        n = self.X_r.shape[0] # total number of available real samples
+        vmu_hat = np.mean(self.y_r * self.X_r.T, axis = 1 ) / n
+
+        C = (self.vmu * np.ones((n , p)) ).T
+        #C = (vmu_hat * np.ones((n , p)) ).T
+
+        cov = (self.y_r * self.X_r.T - C) @ (self.y_r * self.X_r.T - C).T / n
+
+        # generate synthetic samples
+        #X_s, y_s = utils.gaussian_mixture(m, vmu_hat, cov, real = False)
+        X_s, y_s = utils.gaussian_mixture(m, self.vmu, cov, real = False)
+
+        # Pruning
+        # Noise the labels of the synthetic data
+        y_tilde = y_s * (2 * np.random.binomial(size = m, p = 1 - epsilon, n = 1) - 1) # p = P[X = 1], i.e 1 - p = epsilon
+        
+        # Pruning
+        vq = np.zeros(m)
+        # Indices of y_tilde = y
+        m_1 = (y_tilde == y_s).sum()
+        vq[y_tilde == y_s] = np.random.binomial(size = m_1, p = phi, n = 1) 
+        vq[y_tilde != y_s] = np.random.binomial(size = m - m_1, p = rho, n = 1)
+
+        return X_s.T, y_s, vmu_hat, vq, y_tilde
+
 
 ############ MNIST dataset generator ############
 class MNIST_generator(Dataset):
