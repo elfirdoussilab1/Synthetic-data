@@ -7,6 +7,8 @@ from  utils import fix_seed, get_lr
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 import pandas as pd
+import torch.nn.functional as F
+
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
@@ -44,8 +46,9 @@ def evaluate_accuracy(model, split):
 
     for X, y in loader:
         logits = model(X)
-        predictions = (logits > 0.).long()
-        acc += (predictions == y).sum().item()
+        logits = F.sigmoid(logits.view(-1))
+        predictions = (logits > 0.5).float()
+        acc += (predictions == y.view(-1)).sum().item()
 
     return (acc / n) * 100
 
@@ -56,7 +59,8 @@ def evaluate_loss(model, split):
     n = len(train_data) if split in "train" else len(test_data)
     for X, y in loader:
         logits = model(X)
-        loss = loss_fn(logits, y)
+        logits = F.sigmoid(logits.view(-1))
+        loss = loss_fn(logits, y.view(-1))
         loss_accum += loss.item()
 
     return loss_accum / n
@@ -74,7 +78,7 @@ wandb.init(
         )
 
 # Model
-model = Discriminator(28*28, 1)
+model = Discriminator(28*28, 1).to(device)
 
 # Loss and optimizer
 loss_fn = nn.BCELoss()
@@ -107,7 +111,8 @@ for step in tqdm(range(num_steps)):
         batch = next(train_iter)
     x, y = batch
     logits = model(x)
-    loss = loss_fn(logits, y)
+    logits = F.sigmoid(logits.view(-1))
+    loss = loss_fn(logits, y.view(-1))
     loss.backward()
 
     # Gradient clipping

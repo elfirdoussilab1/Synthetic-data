@@ -309,17 +309,19 @@ class MNIST_GAN(Dataset):
 
 class MNIST_verifier_data(Dataset):
     def __init__(self, m, train, device):
+        # m is the number of samples to add per-class, i.e 10*m is the total number of synthetic data
         super().__init__()
         self.device = device
 
         data = datasets.MNIST(root = "data", train = train, download= True, transform= ToTensor())
-        self.X_r = data.data.cpu().detach().numpy() # shape (n, p)
+        self.X_r = data.data.cpu().detach().numpy() # shape (n, 28, 28)
+        self.X_r = self.X_r.reshape(-1, 28*28)
         n, p = self.X_r.shape
         self.y_r = np.ones(n)
 
         # Generating synthetic samples
         X_s = np.empty((0, p))
-        self.y_s = np.zeros(m)
+        self.y_s = np.zeros(m * 10)
 
         if m > 0:
             for k in range(10):
@@ -333,7 +335,6 @@ class MNIST_verifier_data(Dataset):
                 Z = torch.from_numpy(Z).float()
                 fake_images = g_k(Z) # shape (m, 784)
                 fake_images = fake_images.cpu().detach().numpy()
-
                 # Add them to the dataset
                 X_s = np.vstack((X_s, fake_images))
 
@@ -354,7 +355,7 @@ class MNIST_verifier_data(Dataset):
     
     def __getitem__(self, index):
         x = torch.tensor(self.X[index], dtype = torch.float)
-        y = torch.tensor(self.y[index], dtype= torch.long)
+        y = torch.tensor(self.y[index], dtype= torch.float)
         return x.to(self.device), y.to(self.device)
         
 
