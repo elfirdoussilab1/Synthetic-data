@@ -180,3 +180,23 @@ def get_lr(step, max_lr, min_lr, warmup_steps, num_steps):
         assert 0 <= decay_ratio <= 1
         coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and gets to 0
         return min_lr + coeff * (max_lr - min_lr)
+
+################################################# Multi-Class ##########################################
+def accuracy_multi(Y_pred, Y_true):
+    # Ys are of shape (n, k)
+    y_true = np.argmax(Y_true, axis=1)
+    y_pred = np.argmax(Y_pred, axis=1)
+    return np.mean(y_pred == y_true)
+
+def multi_classifier(X_r, X_s, Y_r, Y_s, m, gamma):
+    # X_r of shape (n, p)
+    # X_s of shape (m, p)
+    # Y_r of shape (n, k)
+    n, p = X_r.shape
+    k = Y_r.shape[1]
+    #m = X_s.shape[0]
+    N = n + m
+
+    Q = np.linalg.solve( (X_r.T @ X_r + X_s.T @ X_s) / N + gamma * np.eye(p), np.eye(p))
+    W = Q @ (X_r.T @ Y_r  + X_s.T @ Y_s) / N
+    return W

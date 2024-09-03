@@ -153,7 +153,7 @@ class MNIST_Model(nn.Module):
     def __init__(self):
         super().__init__()
         self.linear = nn.Linear(28*28, 128)
-        self.act = nn.ReLU()
+        self.act = nn.Tanh()
         self.output = nn.Linear(128, 10)
     
     def forward(self, x):

@@ -31,7 +31,7 @@ n = 200
 ms = [0, n//3, n, 2*n, 10*n]
 
 # Fixed dataloaers
-val_data = MNIST_GAN(n, 0, device, train = True)
+val_data = MNIST_GAN(6000, 0, device, train = True)
 test_data = MNIST_GAN(n, 0, device, train = False)
 test_loader = DataLoader(test_data, batch_size= batch_size, shuffle= False)
 val_loader = DataLoader(val_data, batch_size= batch_size, shuffle= False)
@@ -45,7 +45,7 @@ for m in ms:
 
     wandb.init(
             # set the wandb project where this run will be logged
-            project=f"Simple-NN-GAN",
+            project=f"Simple-NN-Tanh-GAN",
 
             # track hyperparameters and run metadata
             config={
@@ -93,22 +93,21 @@ for m in ms:
     train_iter = iter(train_loader)
 
     for step in tqdm(range(num_steps)):
+        # Update learning rate
+        lr = get_lr(step, max_lr, min_lr, warmup_steps, num_steps)
+        for param_group in optimizer.param_groups:
+           param_group['lr'] = lr
+
         if step % eval_delta == 0:
             with torch.no_grad():
                 train_loss = evaluate_loss(model, "train")
                 test_loss = evaluate_loss(model, "test")
                 train_acc = evaluate_accuracy(model, "train")
                 test_acc = evaluate_accuracy(model, "test")
-                wandb.log({"Train Loss": train_loss, "Test Loss" : test_loss, "Train Accuracy": train_acc, "Test Accuracy": test_acc})
+                wandb.log({"Train Loss": train_loss, "Test Loss" : test_loss, "Train Accuracy": train_acc, "Test Accuracy": test_acc, 'lr': lr})
 
         model.train()
         optimizer.zero_grad()
-
-        # Update learning rate
-        lr = get_lr(step, max_lr, min_lr, warmup_steps, num_steps)
-        for param_group in optimizer.param_groups:
-           param_group['lr'] = lr
-           wandb.log({'lr': lr})
 
         try :
             batch = next(train_iter)

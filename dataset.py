@@ -63,7 +63,7 @@ def generate_grammar_data(num_samples, grammar, max_length):
 
 ############ MNIST dataset generator ############
 class MNIST_generator(Dataset):
-    def __init__(self, n, m, device, train = True, m_estim = None, estimate_cov = False):
+    def __init__(self, n, m, device, train = True, m_estim = None, estimate_cov = False, supervision = False, threshold = 0.):
         # n is the number of real data per-class !
         # m_estim is the number of synthetic samples PER-CLASS to use to estimate covariance
         # m is the number of synthetic samples to add per-class
@@ -85,19 +85,15 @@ class MNIST_generator(Dataset):
         # If train, select only n per class
         X_real = np.empty((0, p))
         y_real = []
-        if n <= 5000:
-            if train:
-                for k in range(10):
-                    X = X_r[y_r == k][:n]
-                    y = [k] * n
+        if n <= 5000 and train:
+            for k in range(10):
+                X = X_r[y_r == k][:n]
+                y = [k] * n
 
-                    X_real = np.vstack((X_real, X))
-                    y_real = y_real + y
-                y_real = np.array(y_real)
+                X_real = np.vstack((X_real, X))
+                y_real = y_real + y
+            y_real = np.array(y_real)
 
-            else: # test
-                X_real = X_r
-                y_real = y_r
         else: # Take all samples
             X_real = X_r
             y_real = y_r
@@ -105,7 +101,7 @@ class MNIST_generator(Dataset):
         # Synthetic dataset
         X_s = np.empty((0, p))
         y_s = []
-        if train: 
+        if train and m > 0: 
             for k in range(10):
                 X = X_real[y_real == k]
 
@@ -114,7 +110,6 @@ class MNIST_generator(Dataset):
 
                 # generate m samples of class k
                 X_k_syn = np.random.multivariate_normal(mean = vmu_k, cov = np.eye(p), size = m)
-                y_k_syn = [k] * len(X_k_syn)
 
                 if estimate_cov:
                     # Take m_estim only
@@ -125,10 +120,24 @@ class MNIST_generator(Dataset):
                     vmu_k = np.mean(X, axis = 0)
                     cov_k = (X - vmu_k).T @ (X  -vmu_k)/ (X.shape[0] - 1)
                     Z = np.random.multivariate_normal(mean = vmu_k, cov = cov_k, size = m - m_estim)
-                    X_k_syn = np.vstack((X_k_syn, Z)) # shaoe (m, p)
+                    X_k_syn = np.vstack((X_k_syn, Z)) # shape (m, p)
+
+                # Validate using supervison
+                if supervision:
+                    # Load Discriminator
+                    d_k = Discriminator(in_features=784, out_features=1)
+                    state_dict = torch.load(f'./mnist_models/gan-discriminator-mnist-cl-{k}.pth', weights_only= True)
+                    d_k.load_state_dict(state_dict)
+                    
+                    Z = torch.from_numpy(X_k_syn).float()
+                    ops = d_k(Z).view(-1) # shape (m,)
+                    ops = ops.cpu().detach().numpy() >= threshold
+                    # Images to keep are of ops >= 0
+                    X_k_syn = X_k_syn[ops] # shape (<m, 784)
+
+                y_k_syn = [k] * len(X_k_syn)
 
                 # Add to the final dataset
-                assert X_k_syn.shape[0] == m
                 X_s = np.vstack((X_s, X_k_syn))
                 y_s = y_s + y_k_syn
 
@@ -186,16 +195,16 @@ class MNIST_GAN(Dataset):
         # Synthetic dataset
         X_s = np.empty((0, p))
         y_s = []
-        if train:
+        if train and m > 0:
             for k in range(10):
                 # Load Generator
                 g_k = Generator(in_features=784, out_features=784)
-                state_dict = torch.load(f'./mnist_models/gan-generator-mnist-cl-{k}.pth')
+                state_dict = torch.load(f'./mnist_models/gan-generator-mnist-cl-{k}.pth', weights_only= True)
                 g_k.load_state_dict(state_dict)
 
                 # Load Discriminator
                 d_k = Discriminator(in_features=784, out_features=1)
-                state_dict = torch.load(f'./mnist_models/gan-discriminator-mnist-cl-{k}.pth')
+                state_dict = torch.load(f'./mnist_models/gan-discriminator-mnist-cl-{k}.pth', weights_only= True)
                 d_k.load_state_dict(state_dict)
 
                 # Generate m samples
