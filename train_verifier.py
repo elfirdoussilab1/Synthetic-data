@@ -19,7 +19,7 @@ device ="cuda" if torch.cuda.is_available() else "cpu"
 print("Using device : ", device)
 
 # Hyperparameters
-batch_size = 128
+batch_size = 64
 weight_decay = 1e-4
 num_steps = 4000
 eval_delta = 50
@@ -127,6 +127,9 @@ for step in tqdm(range(num_steps)):
             test_acc = evaluate_accuracy(model, "test")
             wandb.log({"Train Loss": train_loss, "Test Loss" : test_loss, "Train Accuracy": train_acc, "Test Accuracy": test_acc})
 
+    # Break the loop because we get a very good model
+    if step > 120:
+        break
 # Saving the final model
 torch.save(model.state_dict(), f'verifier-m-{m}.pth')
 wandb.finish()
