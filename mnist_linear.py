@@ -10,9 +10,11 @@ plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.s
 # Paramaters
 n = 100
 ms = [0, n//2,  2*n, 10*n, 20*n, 50*n]
+#ms = [0, n//3, n//2,  2*n, 10*n, 20*n]
 gamma = 10
 threshold = 0.
 p_estim = 0.
+name = 'mnist'
 
 # Whether to generate other non supervised data using gan or statistics
 #gan = True
@@ -22,7 +24,7 @@ linewidth = 3
 fontsize = 20
 labelsize = 17
 
-test_data = MNIST_GAN(n, 0, 'cpu', train = False)
+test_data = GAN_data(name, n, 0, 'cpu', train = False)
 X_test = test_data.X
 y_test = test_data.y.astype(int)
 
@@ -127,5 +129,5 @@ ax[0].grid()
 ax[1].legend(fontsize = labelsize)
 ax[1].grid()
 
-path = f'./study-plot/mnist_linear_n-{n}-gamma-{gamma}-threshold-{threshold}-p_estim-{p_estim}.pdf'
+path = f'./study-plot/{name}_linear_n-{n}-gamma-{gamma}-threshold-{threshold}-p_estim-{p_estim}.pdf'
 fig.savefig(path, bbox_inches='tight')
