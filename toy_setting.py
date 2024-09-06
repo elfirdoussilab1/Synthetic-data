@@ -8,16 +8,17 @@ from tqdm.auto import tqdm
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 
 # Parameters
-n = 5000
+n = 1000
 mu = 0.7
 gamma = 1
-batch = 1
+batch = 10
 
-N = 50000
-ps = [50, 500, 1000]
-pis = np.linspace(0.001, 0.9, 50)
+ps = [50, 200, 500]
+pis = np.linspace(0.001, 0.95, 50)
+#ms = np.linspace(0.01, 20, 50) * n
+#pis = ms / (n + ms)
 
-fig, ax = plt.subplots(1, 2, figsize = (15, 5))
+fig, ax = plt.subplots(1, 2, figsize = (15, 5), sharey = True)
 linewidth = 3
 fontsize = 20
 labelsize = 17
@@ -50,8 +51,9 @@ for p in ps:
     acc_weak_th = [] # Weak supervision: phi = 1, rho = 1
     acc_weak_emp = []
     for pi in tqdm(pis):
-        m = int(pi* N) # pi is the proportion of synthetic data
-        epsilon = 1 - test_accuracy(0, m, p, vmu, vmu_hat, cov, eigvals, eigvectors, 0, 0, 1, gamma)
+        m = pi * n / (1 - pi) # pi is the proportion of synthetic data
+        m = int(m)
+        epsilon = 1 - test_accuracy(0, m, p, vmu, vmu, cov, eigvals, eigvectors, 0, 0, 1, gamma)
         #epsilon = 0.5
         print(f'epsilon = {epsilon} for m = {m}')
 
@@ -65,6 +67,7 @@ for p in ps:
     
     # Plotting results
     # Oracle
+    
     line, = ax[0].plot(pis, acc_oracle_th, label = f'p = {p}', linewidth = 2.5)
     color = line.get_color()
     ax[0].scatter(pis, acc_oracle_emp, marker = 'D', alpha = .7, color = color)
@@ -87,5 +90,5 @@ ax[1].tick_params(axis = 'y', which = 'both', labelsize = labelsize)
 ax[0].legend(fontsize = fontsize - 5)
 ax[0].grid()
 ax[1].grid()
-path = './study-plot' + f'/toy-setting-n-{n}-N-{N}-mu-{mu}-gamma-{gamma}.pdf'
+path = './study-plot' + f'/toy-setting-n-{n}-mu-{mu}-gamma-{gamma}-batch-{batch}.pdf'
 fig.savefig(path, bbox_inches='tight')

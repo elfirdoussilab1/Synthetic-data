@@ -18,21 +18,51 @@ print("Using device : ", device)
 
 # Hyperparameters
 batch_size = 64
-weight_decay = 1e-5
+weight_decay = 1e-3
 num_steps = 2000
-eval_delta = 10
+eval_delta = 20
 #Learning rate schedular
 max_lr = 5e-3
 min_lr = max_lr * 0.1
 warmup_steps = 200
 
 # Datasets & DataLoaders
-n = 200
-ms = [0, n//3, n, 2*n, 10*n]
+n = 50
+ms = [0, n//2, n, int(2.5*n), 10*n, 50*n]
+
+# Fixed dataloaers
+test_data = MNIST_GAN(6000, 0, device, train = False)
+test_loader = DataLoader(test_data, batch_size= batch_size, shuffle= False)
+
+# Evaluation
+def evaluate_accuracy(model, split):
+    model.eval()
+    acc = 0
+    loader = train_loader if split in "train" else test_loader
+    n = len(train_data) if split in "train" else len(test_data)
+
+    for X, y in loader:
+        logits = model(X)
+        _, predicted = torch.max(logits, dim = 1)
+        acc += (predicted == y).sum().item()
+
+    return (acc / n) * 100
+
+def evaluate_loss(model, split):
+    model.eval()
+    loss_accum = 0
+    loader = train_loader if split in "train" else test_loader
+    n = len(train_data) if split in "train" else len(test_data)
+    for X, y in loader:
+        logits = model(X)
+        loss = loss_fn(logits, y)
+        loss_accum += loss.item()
+
+    return loss_accum / n
+    
 for m in ms:
     m_estim = int(0.8 * m)
-    train_data = MNIST_generator(n, m, device, train = True)
-    test_data = MNIST_generator(n, m = 0, device = device, train = False)
+    train_data = MNIST_generator(n, m, device, True, m_estim, estimate_cov = True, supervision = False)
 
     # Dataloaders
     train_loader = DataLoader(train_data, batch_size= batch_size, shuffle= True)
@@ -40,69 +70,43 @@ for m in ms:
 
     wandb.init(
             # set the wandb project where this run will be logged
-            project=f"Log-Reg",
+            project=f"Simple-NN-ReLU-Gauss",
 
             # track hyperparameters and run metadata
             config={
-            "architecture": "Linear",
+            "architecture": "NN",
             "dataset": "MNIST"
             },
             name = f"n = {n}, m = {m}, m_estim = {m_estim}"
         )
 
     # Model
-    #model = Mnist_Model().to(device)
-    model = log_reg().to(device)
+    model = MNIST_Model().to(device)
+    #model = log_reg().to(device)
 
     # Loss and optimizer
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr = max_lr, weight_decay=weight_decay)
-
-    # Evaluation
-    def evaluate_accuracy(model, split):
-        model.eval()
-        acc = 0
-        loader = train_loader if split in "train" else test_loader
-        n = len(train_data) if split in "train" else len(test_data)
-
-        for X, y in loader:
-            logits = model(X)
-            _, predicted = torch.max(logits, dim = 1)
-            acc += (predicted == y).sum().item()
-
-        return (acc / n) * 100
-
-    def evaluate_loss(model, split):
-        model.eval()
-        loss_accum = 0
-        loader = train_loader if split in "train" else test_loader
-        n = len(train_data) if split in "train" else len(test_data)
-        for X, y in loader:
-            logits = model(X)
-            loss = loss_fn(logits, y)
-            loss_accum += loss.item()
-
-        return loss_accum / n
+    optimizer = torch.optim.Adam(model.parameters(), lr = max_lr, weight_decay=weight_decay)
 
     # Training Loop
     train_iter = iter(train_loader)
 
     for step in tqdm(range(num_steps)):
+        # Update learning rate
+        lr = get_lr(step, max_lr, min_lr, warmup_steps, num_steps)
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+            
         if step % eval_delta == 0:
             with torch.no_grad():
                 train_loss = evaluate_loss(model, "train")
                 test_loss = evaluate_loss(model, "test")
                 train_acc = evaluate_accuracy(model, "train")
                 test_acc = evaluate_accuracy(model, "test")
-                wandb.log({"Train Loss": train_loss, "Test Loss" : test_loss, "Train Accuracy": train_acc, "Test Accuracy": test_acc})
+                wandb.log({"Train Loss": train_loss, "Test Loss" : test_loss, "Train Accuracy": train_acc, "Test Accuracy": test_acc, 'lr':lr})
 
         model.train()
         optimizer.zero_grad()
-
-        # Update learning rate
-        lr = get_lr(step, max_lr, min_lr, warmup_steps, num_steps)
-        for param_group in optimizer.param_groups:
-           param_group['lr'] = lr
 
         try :
             batch = next(train_iter)

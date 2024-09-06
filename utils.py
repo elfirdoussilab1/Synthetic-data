@@ -135,13 +135,16 @@ def gaussian(x, mean, std):
 
 
 ######################## Toy Setting ########################
-def empirical_risk_toy(batch, n, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma):
+def empirical_risk_toy(batch, n, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma, estim_cov = False):
     res = 0
     #vmu_hat = np.sum(y_r * X_r, axis = 1) / n
 
     for i in range(batch):
         Z = np.random.randn(p, n)
         cov = Z @ Z.T / n
+        if estim_cov:
+            C = (vmu * np.ones((n, p)) ).T
+            cov = (y_r * X_r - C) @ (y_r * X_r - C).T / n
         # Synthetic dataset
         (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, vmu, vmu, cov, epsilon, rho, phi)
         
@@ -150,15 +153,16 @@ def empirical_risk_toy(batch, n, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma):
         res += L2_loss(w, X_test, y_test)
     return res / batch
 
-def empirical_accuracy_toy(batch, n, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma):
+def empirical_accuracy_toy(batch, n, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma, estim_cov = False):
     res = 0
     #vmu_hat = np.sum(y_r * X_r, axis = 1) / n
 
     for i in range(batch):
-        #Z = np.random.randn(p, n)
-        #cov = Z @ Z.T / n
-        C = (vmu * np.ones((n, p)) ).T
-        cov = (y_r * X_r - C) @ (y_r * X_r - C).T / n
+        Z = np.random.randn(p, n)
+        cov = Z @ Z.T / n
+        if estim_cov:
+            C = (vmu * np.ones((n, p)) ).T
+            cov = (y_r * X_r - C) @ (y_r * X_r - C).T / n
         # Synthetic dataset
         (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(n, m, p, vmu, vmu, cov, epsilon, rho, phi)
         

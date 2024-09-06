@@ -104,8 +104,8 @@ for m in ms:
 
     # Loss and optimizer
     loss_fn = nn.CrossEntropyLoss()
-    #optimizer = torch.optim.SGD(model.parameters(), lr = max_lr, weight_decay=weight_decay)
-    optimizer = torch.optim.Adam(model.parameters(), lr = max_lr, weight_decay=weight_decay)
+    optimizer = torch.optim.SGD(model.parameters(), lr = max_lr, weight_decay=weight_decay)
+    #optimizer = torch.optim.Adam(model.parameters(), lr = max_lr, weight_decay=weight_decay)
 
     # Training Loop
     train_iter = iter(train_loader)
