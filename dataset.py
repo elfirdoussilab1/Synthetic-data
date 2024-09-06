@@ -166,7 +166,7 @@ class MNIST_generator(Dataset):
         y_s = []
         if train and m > 0: 
             for k in range(10):
-                X = X_real[y_real == k]
+                X = X_r[y_r == k] # USE ALL samples to estimate statistics
 
                 # estimate the mean
                 vmu_k = np.mean(X, axis = 0)
@@ -177,12 +177,13 @@ class MNIST_generator(Dataset):
                 if estimate_cov:
                     # Take m_estim only
                     X_k_syn = X_k_syn[:m_estim]
-                    X = np.vstack((X, X_k_syn)) # shape (n + m_estim, p)
+                    X = np.vstack((X, X_k_syn)) # shape (6000 + m_estim, p)
 
                     # Estimate the mean again
                     vmu_k = np.mean(X, axis = 0)
-                    cov_k = (X - vmu_k).T @ (X  -vmu_k)/ (X.shape[0] - 1)
+                    cov_k = (X - vmu_k).T @ (X  - vmu_k)/ X.shape[0]
                     Z = np.random.multivariate_normal(mean = vmu_k, cov = cov_k, size = m - m_estim)
+                    Z = np.maximum(Z, 0)
                     X_k_syn = np.vstack((X_k_syn, Z)) # shape (m, p)
 
                 # Validate using supervison
