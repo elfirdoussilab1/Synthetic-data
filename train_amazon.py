@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 
 # Parameters
-n = 1000
+n = 800
 p = 400
 gamma = 1e-1
 epsilon = .2
@@ -23,9 +23,9 @@ fig, ax = plt.subplots(1, 3, figsize = (30, 6))
 fontsize = 40
 labelsize = 35
 linewidth = 4
-s = 150
+s = 170
 
-seeds = [1, 2, 123, 404]
+seeds = [1, 2, 123, 321, 404]
 
 pis = ms / (n + ms)
 
@@ -46,7 +46,13 @@ for i, name in enumerate(names):
             # Real data
             X_r = data.X_r
             y_r = data.y_r
+            #vmu = data.vmu
+            #C = (vmu * np.ones((n, p)) ).T
+            #cov = (y_r * X_r.T - C) @ (y_r * X_r.T - C).T / n
 
+            # eigenvalues and eigenvectors
+            #eigvals, eigvectors = np.linalg.eig(cov)
+            #epsilon = 1 - test_accuracy(0, m, p, vmu, vmu, cov, eigvals, eigvectors, 0, 0, 1, gamma)
             # Synthetic data
             X_s, y_s, vmu_hat, vq, y_tilde = data.generate_synth_data(m, epsilon, rho, phi)
 
@@ -64,10 +70,11 @@ for i, name in enumerate(names):
     assert accs.shape == (len(seeds), len(ms))
 
     # Plotting results
-    ax[i].plot(pis, np.mean(accs, axis = 0), linewidth = linewidth)
-    ax[i].scatter(pis, np.mean(accs, axis = 0), marker = 'D', s = s, color = 'tab:green', alpha = .7)
+    color = 'tab:green' if rho == 0. else 'tab:red'
+    ax[i].plot(pis, np.mean(accs, axis = 0), linewidth = linewidth, color = color)
+    ax[i].scatter(pis, np.mean(accs, axis = 0), marker = 'o', s = s, color = color, alpha = 1)
     ax[i].fill_between(pis,  np.mean(accs, axis = 0) - np.std(accs, axis = 0), np.mean(accs, axis = 0) + np.std(accs, axis = 0),
-                    alpha = 0.3, linestyle = '-.', color = 'tab:orange')
+                    alpha = 0.2, linestyle = '-.', color =color)
     
     ax[i].set_title(f'{name.upper()}', fontsize = fontsize)
     ax[i].set_xlabel('$1 - \pi$', fontsize = fontsize)

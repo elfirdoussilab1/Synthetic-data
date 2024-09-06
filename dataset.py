@@ -89,7 +89,11 @@ class Amazon:
 
         # Train Test split
         self.X_r, self.X_test, self.y_r, self.y_test = train_test_split(self.X, self.y, train_size = n / len(self.y))
-    
+        
+        # Extend test set
+        self.X_test = self.X
+        self.y_test = self.y
+        
     def generate_synth_data(self, m, epsilon, rho, phi):
         # Estimate covariance matrix
         p = self.X.shape[1]
