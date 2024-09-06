@@ -13,8 +13,6 @@ n = 800
 p = 400
 gamma = 1e-1
 epsilon = .2
-rho = 0.
-phi = 1.
 
 names = ['books', 'elec', 'kitchen']
 ms = np.array([1, n//4, n//2, n, 2*n, 5*n, 10*n, 15*n])
@@ -30,59 +28,62 @@ seeds = [1, 2, 123, 321, 404]
 pis = ms / (n + ms)
 
 theory = False
+params = [(0., 1.), (1., 1.)]
 
-for i, name in enumerate(names):
-    accs = []
-    for seed in seeds:
-        accs_seed = []
-        fix_seed(seed)
-        data = Amazon(n, name)
+for rho, phi in params:
+    for i, name in enumerate(names):
+        accs = []
+        for seed in seeds:
+            accs_seed = []
+            fix_seed(seed)
+            data = Amazon(n, name)
 
-        for m in tqdm(ms):
-            # Test Data
-            X_test = data.X_test
-            y_test = data.y_test
-            mu = data.mu
-            # Real data
-            X_r = data.X_r
-            y_r = data.y_r
-            #vmu = data.vmu
-            #C = (vmu * np.ones((n, p)) ).T
-            #cov = (y_r * X_r.T - C) @ (y_r * X_r.T - C).T / n
+            for m in tqdm(ms):
+                # Test Data
+                X_test = data.X_test
+                y_test = data.y_test
+                mu = data.mu
+                # Real data
+                X_r = data.X_r
+                y_r = data.y_r
+                #vmu = data.vmu
+                #C = (vmu * np.ones((n, p)) ).T
+                #cov = (y_r * X_r.T - C) @ (y_r * X_r.T - C).T / n
 
-            # eigenvalues and eigenvectors
-            #eigvals, eigvectors = np.linalg.eig(cov)
-            #epsilon = 1 - test_accuracy(0, m, p, vmu, vmu, cov, eigvals, eigvectors, 0, 0, 1, gamma)
-            # Synthetic data
-            X_s, y_s, vmu_hat, vq, y_tilde = data.generate_synth_data(m, epsilon, rho, phi)
+                # eigenvalues and eigenvectors
+                #eigvals, eigvectors = np.linalg.eig(cov)
+                #epsilon = 1 - test_accuracy(0, m, p, vmu, vmu, cov, eigvals, eigvectors, 0, 0, 1, gamma)
+                # Synthetic data
+                X_s, y_s, vmu_hat, vq, y_tilde = data.generate_synth_data(m, epsilon, rho, phi)
 
-            # Classifier
-            w = classifier_vector(X_r.T, y_r, X_s.T, y_tilde, vq, gamma)
-            if theory:
-                accs_seed.append(test_accuracy_toy(n, m, p, mu, epsilon, rho, phi, gamma))
-            else:
-                accs_seed.append(accuracy(y_test, decision(w, X_test.T)))
+                # Classifier
+                w = classifier_vector(X_r.T, y_r, X_s.T, y_tilde, vq, gamma)
+                if theory:
+                    accs_seed.append(test_accuracy_toy(n, m, p, mu, epsilon, rho, phi, gamma))
+                else:
+                    accs_seed.append(accuracy(y_test, decision(w, X_test.T)))
+                
             
+            accs.append(accs_seed)
         
-        accs.append(accs_seed)
-    
-    accs = np.array(accs)
-    assert accs.shape == (len(seeds), len(ms))
+        accs = np.array(accs)
+        assert accs.shape == (len(seeds), len(ms))
 
-    # Plotting results
-    color = 'tab:green' if rho == 0. else 'tab:red'
-    ax[i].plot(pis, np.mean(accs, axis = 0), linewidth = linewidth, color = color)
-    ax[i].scatter(pis, np.mean(accs, axis = 0), marker = 'o', s = s, color = color, alpha = 1)
-    ax[i].fill_between(pis,  np.mean(accs, axis = 0) - np.std(accs, axis = 0), np.mean(accs, axis = 0) + np.std(accs, axis = 0),
-                    alpha = 0.2, linestyle = '-.', color =color)
-    
-    ax[i].set_title(f'{name.upper()}', fontsize = fontsize)
-    ax[i].set_xlabel('$1 - \pi$', fontsize = fontsize)
-    ax[i].tick_params(axis='x', which = 'both', labelsize=labelsize)
-    ax[i].tick_params(axis='y', which = 'both', labelsize=labelsize)
-    ax[i].grid(True)
+        # Plotting results
+        color = 'tab:green' if rho == 0. else 'tab:red'
+        label = 'Oracle Supervision' if rho == 0. else 'No Supervision'
+        ax[i].plot(pis, np.mean(accs, axis = 0), linewidth = linewidth, color = color, label = label)
+        ax[i].scatter(pis, np.mean(accs, axis = 0), marker = 'o', s = s, color = color, alpha = 1)
+        ax[i].fill_between(pis,  np.mean(accs, axis = 0) - np.std(accs, axis = 0), np.mean(accs, axis = 0) + np.std(accs, axis = 0),
+                        alpha = 0.2, linestyle = '-.', color =color)
+        
+        ax[i].set_title(f'{name.upper()}', fontsize = fontsize)
+        ax[i].set_xlabel('$1 - \pi$', fontsize = fontsize)
+        ax[i].tick_params(axis='x', which = 'both', labelsize=labelsize)
+        ax[i].tick_params(axis='y', which = 'both', labelsize=labelsize)
+        ax[i].grid(True)
 
-title = 'Oracle Supervision' if rho == 0. else 'Weak Supervision'
-ax[0].set_ylabel(title, fontsize = fontsize)
-path = f'./study-plot/train_amazon-n-{n}-p-{p}-gamma-{gamma}-epsilon-{epsilon}-rho-{rho}-phi-{phi}-theory-{theory}.pdf'
+ax[0].set_ylabel('Test Accuracy', fontsize = fontsize)
+ax[0].legend(fontsize = labelsize - 5)
+path = f'./study-plot/train_amazon-n-{n}-p-{p}-gamma-{gamma}-epsilon-{epsilon}-theory-{theory}.pdf'
 fig.savefig(path, bbox_inches='tight')

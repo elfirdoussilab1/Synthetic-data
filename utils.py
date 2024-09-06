@@ -3,6 +3,9 @@ import numpy as np
 import random
 import torch
 import math
+from model import *
+from dataset import *
+import torch.nn.functional as F
 
 # Seed fixing
 def fix_seed(seed):
@@ -204,3 +207,18 @@ def multi_classifier(X_r, X_s, Y_r, Y_s, m, gamma):
     Q = np.linalg.solve( (X_r.T @ X_r + X_s.T @ X_s) / N + gamma * np.eye(p), np.eye(p))
     W = Q @ (X_r.T @ Y_r  + X_s.T @ Y_s) / N
     return W
+
+def verification_perc(path, threshold, m = 12000, p_estim = 0.8):
+    verifier = Discriminator(28*28, 1)
+    state_dict = torch.load(path, weights_only= True)
+    verifier.load_state_dict(state_dict)
+
+    # Generate synthetic data
+    data = MNIST_generator(100, m, 'cpu', train = True, m_estim = int(p_estim * m), estimate_cov= True, supervision= False)
+    X_s = torch.from_numpy(data.X_s).float()
+    print("X_s shape is ", X_s.shape)
+    ops = verifier(X_s).view(-1) # shape (m,)
+    ops = F.sigmoid(ops) >= threshold
+    ops = ops.cpu().detach().numpy()
+
+    return (np.sum(ops) / (10*m))*100

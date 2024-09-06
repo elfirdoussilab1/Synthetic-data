@@ -8,16 +8,14 @@ from dataset import *
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 
 # Paramaters
-n = 100
-ms = [0, n//2,  2*n, 10*n, 20*n, 50*n]
-#ms = [0, n//3, n//2,  2*n, 10*n, 20*n]
+n = 150
+ms = [0, n//2, 2*n, int(2.5*n), 5*n, 10*n, 15*n]
 gamma = 10
-threshold = 0.
+
+# Gaussian threshold
+threshold = 0.005 # keeps 65% of synthetic data
 p_estim = 0.
 name = 'mnist'
-
-# Whether to generate other non supervised data using gan or statistics
-#gan = True
 
 # plotting params
 linewidth = 3
@@ -35,7 +33,7 @@ fig, ax = plt.subplots(1, 2, figsize = (15, 4), sharey = True)
 
 seeds = [1, 123, 404]
 
-for gan in [True, False]:
+for i, gan in enumerate([True, False]):
     accs_oracle_all = []
     accs_weak_all = []
     for seed in seeds:
@@ -44,13 +42,11 @@ for gan in [True, False]:
         accs_weak = []
 
         for m in tqdm(ms):
-        
-            # Oracle Supervision
+            # Strong Supervision
             if gan :
-                train_data = MNIST_GAN(n, m, 'cpu', train = True, supervision = True, threshold= threshold)
+                train_data = MNIST_GAN(n, m, 'cpu', train = True, supervision = True, threshold= -0.3)
             else:
                 train_data = MNIST_generator(n, m, 'cpu', train = True, m_estim = int(p_estim * m), estimate_cov= True, supervision= True, threshold= threshold)
-            #train_data = MNIST_GAN(n, m, 'cpu', train = True, supervision = True, threshold= threshold)
             X_r = train_data.X_real
             y_r = train_data.y_real.astype(int)
             X_s = train_data.X_s
@@ -98,36 +94,26 @@ for gan in [True, False]:
 
     # Plotting results
     # Oracle supervision
-    label = 'GAN data' if gan else 'Gaussian data'
-    color = 'tab:green'if gan else 'tab:red'
-    ax[0].plot(pis, np.mean(accs_oracle_all, axis = 0), linewidth = linewidth, color = color, label = label)
-    ax[0].scatter(pis, np.mean(accs_oracle_all, axis = 0), color = color, s= 100)
-    ax[0].fill_between(pis,  np.mean(accs_oracle_all, axis = 0) - np.std(accs_oracle_all, axis = 0), np.mean(accs_oracle_all, axis = 0) + np.std(accs_oracle_all, axis = 0),
+    title = 'GAN data' if gan else 'Gaussian data'
+    ax[i].plot(pis, np.mean(accs_oracle_all, axis = 0), linewidth = linewidth, color = 'tab:green', label = 'Supervision')
+    ax[i].scatter(pis, np.mean(accs_oracle_all, axis = 0), color = 'tab:green', s= 100)
+    ax[i].fill_between(pis,  np.mean(accs_oracle_all, axis = 0) - np.std(accs_oracle_all, axis = 0), np.mean(accs_oracle_all, axis = 0) + np.std(accs_oracle_all, axis = 0),
                     alpha = 0.2, linestyle = '-.', color = 'tab:orange')
-    ax[0].set_xlabel('Proportion of Synthetic data', fontsize = fontsize)
-    ax[0].set_ylabel('Test Accuracy', fontsize = fontsize)
-    ax[0].tick_params(axis='x', which = 'both', labelsize=labelsize)
-    ax[0].tick_params(axis='y', which = 'both', labelsize=labelsize)
-    ax[0].set_title("Discriminator's Supervision", fontsize = fontsize)
     
 
     # No supervision
-    ax[1].plot(pis, np.mean(accs_weak_all, axis = 0), linewidth = linewidth, color = color, label = label)
-    ax[1].scatter(pis, np.mean(accs_weak_all, axis = 0), color = color, s= 100)
-    ax[1].fill_between(pis,  np.mean(accs_weak_all, axis = 0) - np.std(accs_weak_all, axis = 0), np.mean(accs_weak_all, axis = 0) + np.std(accs_weak_all, axis = 0),
+    ax[i].plot(pis, np.mean(accs_weak_all, axis = 0), linewidth = linewidth, color = 'tab:red', label = 'No supervision')
+    ax[i].scatter(pis, np.mean(accs_weak_all, axis = 0), color = 'tab:red', s= 100)
+    ax[i].fill_between(pis,  np.mean(accs_weak_all, axis = 0) - np.std(accs_weak_all, axis = 0), np.mean(accs_weak_all, axis = 0) + np.std(accs_weak_all, axis = 0),
                     alpha = 0.2, linestyle = '-.', color = 'tab:orange')
 
-    ax[1].set_xlabel('Proportion of Synthetic data', fontsize = fontsize)
-    ax[1].tick_params(axis='x', which = 'both', labelsize=labelsize)
-    ax[1].tick_params(axis='y', which = 'both', labelsize=labelsize)
-
-    ax[1].set_title("No Supervision", fontsize = fontsize)
-    
-
-ax[0].legend(fontsize = labelsize)
-ax[0].grid()
-ax[1].legend(fontsize = labelsize)
-ax[1].grid()
+    ax[i].set_xlabel('Proportion of Synthetic data', fontsize = fontsize)
+    ax[i].set_ylabel('Test Accuracy', fontsize = fontsize)
+    ax[i].tick_params(axis='x', which = 'both', labelsize=labelsize)
+    ax[i].tick_params(axis='y', which = 'both', labelsize=labelsize)
+    ax[i].set_title(title, fontsize = fontsize)
+    ax[i].grid()
+    ax[i].legend(fontsize = labelsize)    
 
 path = f'./study-plot/{name}_linear_n-{n}-gamma-{gamma}-threshold-{threshold}-p_estim-{p_estim}.pdf'
 fig.savefig(path, bbox_inches='tight')

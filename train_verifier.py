@@ -28,11 +28,12 @@ max_lr = 5e-3
 min_lr = max_lr * 0.1
 warmup_steps = 800
 threshold = 0.
+gaussian = True
 
 # Datasets
 m = 12000
-train_data = MNIST_verifier_data(m = m, train = True, device= device)
-test_data = MNIST_verifier_data(m = m // 6, train = False, device= device)
+train_data = MNIST_verifier_data(m = m, train = True, device= device, gaussian= gaussian)
+test_data = MNIST_verifier_data(m = m // 6, train = False, device= device, gaussian= gaussian)
 
 # DataLoaders
 train_loader = DataLoader(train_data, batch_size= batch_size, shuffle = True)
@@ -101,6 +102,9 @@ for step in tqdm(range(num_steps)):
             test_acc = evaluate_accuracy(model, "test")
             wandb.log({"Train Loss": train_loss, "Test Loss" : test_loss, "Train Accuracy": train_acc, "Test Accuracy": test_acc, 'lr': lr})
 
+        if test_acc >= 99.9:
+            print("Stop it now")
+            break
     model.train()
     optimizer.zero_grad()
 
@@ -128,8 +132,8 @@ for step in tqdm(range(num_steps)):
             wandb.log({"Train Loss": train_loss, "Test Loss" : test_loss, "Train Accuracy": train_acc, "Test Accuracy": test_acc})
 
     # Break the loop because we get a very good model
-    if step > 120:
-        break
+    #if step > 120:
+    #    break
 # Saving the final model
-torch.save(model.state_dict(), f'verifier-m-{m}.pth')
+torch.save(model.state_dict(), f'verifier-m-{m}-gaussian-{gaussian}.pth')
 wandb.finish()

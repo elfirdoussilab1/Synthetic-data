@@ -10,6 +10,7 @@ from scipy.io import loadmat
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import utils
+import torch.nn.functional as F
 
 # Generate synthetic data with hierarchical structure
 class SimpleGrammar:
@@ -93,7 +94,7 @@ class Amazon:
         # Extend test set
         self.X_test = self.X
         self.y_test = self.y
-        
+
     def generate_synth_data(self, m, epsilon, rho, phi):
         # Estimate covariance matrix
         p = self.X.shape[1]
@@ -187,13 +188,14 @@ class MNIST_generator(Dataset):
                 # Validate using supervison
                 if supervision:
                     # Load Discriminator
-                    d_k = Discriminator(in_features=784, out_features=1)
-                    state_dict = torch.load(f'./models/gan-discriminator-mnist-cl-{k}.pth', weights_only= True)
-                    d_k.load_state_dict(state_dict)
+                    verifier = Discriminator(in_features=784, out_features=1)
+                    state_dict = torch.load(f'./models/verifier-m-12000-gaussian-True-acc-90.pth', weights_only= True)
+                    verifier.load_state_dict(state_dict)
                     
                     Z = torch.from_numpy(X_k_syn).float()
-                    ops = d_k(Z).view(-1) # shape (m,)
-                    ops = ops.cpu().detach().numpy() >= threshold
+                    ops = verifier(Z).view(-1) # shape (m,)
+                    ops = F.sigmoid(ops) >= threshold
+                    ops = ops.cpu().detach().numpy()
                     # Images to keep are of ops >= 0
                     X_k_syn = X_k_syn[ops] # shape (<m, 784)
 
@@ -403,7 +405,7 @@ class GAN_data(Dataset):
         return x.to(self.device), y.to(self.device)
 
 class MNIST_verifier_data(Dataset):
-    def __init__(self, m, train, device):
+    def __init__(self, m, train, device, gaussian = False):
         # m is the number of samples to add per-class, i.e 10*m is the total number of synthetic data
         super().__init__()
         self.device = device
@@ -418,19 +420,24 @@ class MNIST_verifier_data(Dataset):
         X_s = np.empty((0, p))
         self.y_s = np.zeros(m * 10)
 
-        if m > 0:
-            for k in range(10):
-                # Load Generator
-                g_k = Generator(in_features=784, out_features=784)
-                state_dict = torch.load(f'./models/gan-generator-mnist-cl-{k}.pth', weights_only= True)
-                g_k.load_state_dict(state_dict)
+        if m > 0 :
+            if gaussian == False:
+                for k in range(10):
+                    # Load Generator
+                    g_k = Generator(in_features=784, out_features=784)
+                    state_dict = torch.load(f'./models/gan-generator-mnist-cl-{k}.pth', weights_only= True)
+                    g_k.load_state_dict(state_dict)
 
-                # Generate m samples
-                Z = np.random.uniform(-1, 1, size=(m, 784))
-                Z = torch.from_numpy(Z).float()
-                fake_images = g_k(Z) # shape (m, 784)
-                fake_images = fake_images.cpu().detach().numpy()
-                # Add them to the dataset
+                    # Generate m samples
+                    Z = np.random.uniform(-1, 1, size=(m, 784))
+                    Z = torch.from_numpy(Z).float()
+                    fake_images = g_k(Z) # shape (m, 784)
+                    fake_images = fake_images.cpu().detach().numpy()
+                    # Add them to the dataset
+                    X_s = np.vstack((X_s, fake_images))
+            else:
+                data = MNIST_generator(n, m, device, train = True, m_estim = int(0.8*m), estimate_cov= True, supervision= False)
+                fake_images = data.X_s
                 X_s = np.vstack((X_s, fake_images))
 
         self.X_s = X_s
