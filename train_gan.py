@@ -16,37 +16,38 @@ fix_seed(1337)
 device ="cuda" if torch.cuda.is_available() else "cpu"
 print("Using device : ", device)
 
-# # Hyperparameters: MNIST
-# batch_size = 64
-# weight_decay = 1e-3
-# num_steps = 2000
-# eval_delta = 20
-# #Learning rate schedular
-# max_lr = 5e-3
-# min_lr = max_lr * 0.1
-# warmup_steps = 200
-# threshold = 0.
-
-# # Datasets & DataLoaders
-# n = 50
-# ms = [0, n//2, n, 10*n, 50*n]
-# name = 'mnist'
-
-# Hyperparameters: FashionMNIST
+# Hyperparameters: MNIST
 batch_size = 64
 weight_decay = 1e-3
-num_steps = 4000
+num_steps = 2000
 eval_delta = 40
 #Learning rate schedular
-max_lr = 1e-3
+max_lr = 5e-3
 min_lr = max_lr * 0.1
-warmup_steps = 800
+warmup_steps = 200
+supervision = False
 threshold = 0.
 
 # Datasets & DataLoaders
-n = 1000
-ms = [0, n//2, n, 2*n, 10*n, 20*n]
-name = 'fashionmnist'
+n = 50
+ms = [0, n//2, n, 2*n, int(2.5*n), 10*n, 15*n]
+name = 'mnist'
+
+# Hyperparameters: FashionMNIST
+# batch_size = 64
+# weight_decay = 1e-3
+# num_steps = 4000
+# eval_delta = 40
+# #Learning rate schedular
+# max_lr = 1e-3
+# min_lr = max_lr * 0.1
+# warmup_steps = 800
+# threshold = 0.
+
+# # Datasets & DataLoaders
+# n = 1000
+# ms = [0, n//2, n, 2*n, 10*n, 20*n]
+# name = 'fashionmnist'
 
 # Fixed dataloaers
 val_data = GAN_data(name, 6000, 0, device, train = True)
@@ -81,7 +82,7 @@ def evaluate_loss(model, split):
     return loss_accum / n
 
 for m in ms:
-    train_data = GAN_data(name, n, m, device, train = True, supervision= True, threshold= threshold)
+    train_data = GAN_data(name, n, m, device, True, supervision, threshold)
     
     # Dataloader
     train_loader = DataLoader(train_data, batch_size= batch_size, shuffle= True)
@@ -95,7 +96,7 @@ for m in ms:
             "architecture": "NN",
             "dataset": "FashionMNISt"
             },
-            name = f"n = {n}, m = {m}"
+            name = f"n = {n}, m = {m}, supervision = {supervision}, threshold = {threshold}"
         )
 
     # Model
@@ -158,5 +159,5 @@ for m in ms:
                 df.to_csv('results.csv', index = False)
 
     # Saving the final model
-    torch.save(model.state_dict(), f'{name}-n-{n}-m-{m}.pth')
+    torch.save(model.state_dict(), f'{name}-gan-n-{n}-m-{m}-supervision-{supervision}-thresh-{threshold}.pth')
     wandb.finish()
