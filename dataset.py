@@ -124,9 +124,15 @@ class Amazon:
         return X_s.T, y_s, vmu_hat, vq, y_tilde
 
 
-############ MNIST dataset generator ############
+#################################### MNIST dataset generator ####################################
+def next_label_noisy(k):
+    if k == 9:
+        return 0
+    return k + 1
+
 class MNIST_generator(Dataset):
-    def __init__(self, n, m, device, train = True, m_estim = None, estimate_cov = False, supervision = False, threshold = 0.):
+    def __init__(self, n, m, device, train = True, n_use = None, m_estim = None, estimate_cov = False, supervision = False, threshold = 0.,
+                 epsilon = None, rho = None, phi = None):
         # n is the number of real data per-class !
         # m_estim is the number of synthetic samples PER-CLASS to use to estimate covariance
         # m is the number of synthetic samples to add per-class
@@ -140,8 +146,7 @@ class MNIST_generator(Dataset):
         y_r = data.targets.cpu().detach().numpy()
 
         X_r = data.data.cpu().detach().numpy() # (N, 28, 28)
-        N = X_r.shape[0]
-        X_r = X_r.reshape(N , -1)
+        X_r = X_r.reshape(len(y_r) , -1)
         p = X_r.shape[1]
         X_r = X_r.astype(float)
 
@@ -164,11 +169,17 @@ class MNIST_generator(Dataset):
         # Synthetic dataset
         X_s = np.empty((0, p))
         y_s = []
+        y_tilde = []
+
         if train and m > 0: 
             for k in range(10):
-                X = X_r[y_r == k] # USE ALL samples to estimate statistics
+                if n_use is None or n_use > 5000:
+                    X = X_r[y_r == k] # USE ALL samples to estimate statistics
 
-                # estimate the mean
+                else:
+                    X = X_r[y_r == k][:n_use]
+
+                # Estimate the mean
                 vmu_k = np.mean(X, axis = 0)
 
                 # generate m samples of class k
@@ -177,8 +188,7 @@ class MNIST_generator(Dataset):
                 if estimate_cov:
                     # Take m_estim only
                     X_k_syn = X_k_syn[:m_estim]
-                    X = np.vstack((X, X_k_syn)) # shape (6000 + m_estim, p)
-
+                    X = np.vstack((X, X_k_syn)) # shape (n_use + m_estim, p)
                     # Estimate the mean again
                     vmu_k = np.mean(X, axis = 0)
                     cov_k = (X - vmu_k).T @ (X  - vmu_k)/ X.shape[0]
@@ -186,7 +196,7 @@ class MNIST_generator(Dataset):
                     Z = np.maximum(Z, 0)
                     X_k_syn = np.vstack((X_k_syn, Z)) # shape (m, p)
 
-                # Validate using supervison
+                # Validate using prompt supervison
                 if supervision:
                     # Load Discriminator
                     verifier = Discriminator(in_features=784, out_features=1)
@@ -200,13 +210,43 @@ class MNIST_generator(Dataset):
                     # Images to keep are of ops >= 0
                     X_k_syn = X_k_syn[ops] # shape (<m, 784)
 
+                # Labels
                 y_k_syn = [k] * len(X_k_syn)
+                y_s = y_s + y_k_syn
+
+                # Add label noise
+                num_noisy  = int(epsilon * len(X_k_syn))
+                y_k_tilde = [k] * (len(X_k_syn) - num_noisy) + [next_label_noisy(k)] * num_noisy
+                y_tilde = y_tilde + y_k_tilde
 
                 # Add to the final dataset
                 X_s = np.vstack((X_s, X_k_syn))
-                y_s = y_s + y_k_syn
-
+                
         y_s = np.array(y_s)
+        y_tilde = np.array(y_tilde)
+
+        # Label supervison
+        if rho is not None and phi is not None:
+            idx_phi = np.where(y_s == y_tilde)[0]
+            #print("idx_phi shape", idx_phi.shape)
+            idx_rho =  np.where(y_s != y_tilde)[0]
+            #print("idx_rho shape", idx_rho.shape)
+
+            prop_phi = int(len(idx_phi) * phi)
+            prop_rho = int(len(idx_rho) * rho)
+            
+            # Good samples to take
+            X_phi = X_s[idx_phi][:prop_phi]
+            y_phi = y_tilde[idx_phi][:prop_phi]
+
+            # Bad samples to take
+            X_rho = X_s[idx_rho][:prop_rho]
+            y_rho = y_tilde[idx_rho][:prop_rho]
+
+            # Group them finally
+            X_s = np.vstack((X_phi, X_rho))
+            y_s = np.hstack((y_phi, y_rho))
+
         # Separate
         self.X_s = X_s
         self.y_s = y_s
