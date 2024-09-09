@@ -69,7 +69,8 @@ def evaluate_loss(model, split):
     
 for m in ms:
     m_estim = int(p_estim * m)
-    train_data = MNIST_generator(n, m, device, True, m_estim, estimate_cov = True, supervision = supervision, threshold= threshold)
+    train_data = MNIST_generator(n, m, device, True, n_use= n_use, epsilon = epsilon, rho = rho, phi = phi, 
+                                 estimate_cov= True, m_estim=m_estim, supervision= supervision, threshold= threshold)
 
     # Dataloaders
     train_loader = DataLoader(train_data, batch_size= batch_size, shuffle= True)
