@@ -18,17 +18,24 @@ print("Using device : ", device)
 
 # Hyperparameters
 batch_size = 64
-weight_decay = 1e-3
-num_steps = 2000
+weight_decay = 1e-4
+num_steps = 3000
 eval_delta = 20
 #Learning rate schedular
 max_lr = 5e-3
 min_lr = max_lr * 0.1
-warmup_steps = 200
+warmup_steps = 300
 
 # Datasets & DataLoaders
 n = 50
-ms = [0, n//2, n, int(2.5*n), 10*n, 50*n]
+ms = [0, n//2, n, int(2.5*n), 10*n, 15*n]
+n_use = None
+p_estim = 0.
+supervision = False
+threshold = None
+epsilon = 0.3
+rho = 0.1
+phi = 0.9
 
 # Fixed dataloaers
 test_data = MNIST_GAN(6000, 0, device, train = False)
@@ -61,8 +68,8 @@ def evaluate_loss(model, split):
     return loss_accum / n
     
 for m in ms:
-    m_estim = int(0.8 * m)
-    train_data = MNIST_generator(n, m, device, True, m_estim, estimate_cov = True, supervision = False)
+    m_estim = int(p_estim * m)
+    train_data = MNIST_generator(n, m, device, True, m_estim, estimate_cov = True, supervision = supervision, threshold= threshold)
 
     # Dataloaders
     train_loader = DataLoader(train_data, batch_size= batch_size, shuffle= True)
@@ -77,16 +84,15 @@ for m in ms:
             "architecture": "NN",
             "dataset": "MNIST"
             },
-            name = f"n = {n}, m = {m}, m_estim = {m_estim}"
+            name = f"n = {n}, m = {m}, eps ={epsilon}, rho = {rho}, phi = {phi}, n_use = {n_use}, supervision = {supervision}, threshold = {threshold}"
         )
 
     # Model
     model = MNIST_Model().to(device)
-    #model = log_reg().to(device)
 
     # Loss and optimizer
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr = max_lr, weight_decay=weight_decay)
+    optimizer = torch.optim.SGD(model.parameters(), lr = max_lr, weight_decay=weight_decay)
 
     # Training Loop
     train_iter = iter(train_loader)
@@ -139,5 +145,5 @@ for m in ms:
                 df.to_csv('results.csv', index = False)
 
     # Saving the final model
-    torch.save(model.state_dict(), f'mnist-n-{n}-m-{m}-m_estim-{m_estim}.pth')
+    torch.save(model.state_dict(), f'mnist-n-{n}-m-{m}-m_estim-{m_estim}-supervision-{supervision}-thresh-{threshold}.pth')
     wandb.finish()

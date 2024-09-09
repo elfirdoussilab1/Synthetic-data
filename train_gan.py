@@ -18,13 +18,13 @@ print("Using device : ", device)
 
 # Hyperparameters: MNIST
 batch_size = 64
-weight_decay = 1e-3
-num_steps = 2000
-eval_delta = 40
+weight_decay = 1e-4
+num_steps = 3000
+eval_delta = 20
 #Learning rate schedular
 max_lr = 5e-3
 min_lr = max_lr * 0.1
-warmup_steps = 200
+warmup_steps = 300
 supervision = False
 threshold = 0.
 

@@ -222,3 +222,10 @@ def verification_perc(path, threshold, m = 12000, p_estim = 0.8):
     ops = ops.cpu().detach().numpy()
 
     return (np.sum(ops) / (10*m))*100
+
+
+def cov_dist(cov1, cov2):
+    eigvals1 = np.linalg.eig(cov1)[0]
+    eigvals2 = np.linalg.eig(cov2)[0]
+
+    return np.sum(abs(eigvals1 - eigvals2))
