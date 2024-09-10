@@ -132,7 +132,7 @@ def next_label_noisy(k):
 
 class MNIST_generator(Dataset):
     def __init__(self, n, m, device, train = True, n_use = None, m_estim = None, estimate_cov = False, supervision = False, threshold = 0.,
-                 epsilon = None, rho = None, phi = None):
+                 epsilon = 0, rho = 0., phi = 1.):
         # n is the number of real data per-class !
         # m_estim is the number of synthetic samples PER-CLASS to use to estimate covariance
         # m is the number of synthetic samples to add per-class
@@ -189,12 +189,14 @@ class MNIST_generator(Dataset):
                     # Take m_estim only
                     X_k_syn = X_k_syn[:m_estim]
                     X = np.vstack((X, X_k_syn)) # shape (n_use + m_estim, p)
+                    print(X.shape)
                     # Estimate the mean again
                     vmu_k = np.mean(X, axis = 0)
                     cov_k = (X - vmu_k).T @ (X  - vmu_k)/ X.shape[0]
                     Z = np.random.multivariate_normal(mean = vmu_k, cov = cov_k, size = m - m_estim)
                     Z = np.maximum(Z, 0)
                     X_k_syn = np.vstack((X_k_syn, Z)) # shape (m, p)
+                    print(X_k_syn.shape)
 
                 # Validate using prompt supervison
                 if supervision:
