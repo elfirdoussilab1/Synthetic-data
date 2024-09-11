@@ -21,7 +21,7 @@ scores_strong = {epsilons[0]: [0.66, 0.76, 0.87, 0.95, 0.98, 0.99],
 
 # Scores with weak supervision
 scores_weak = {epsilons[0]: [0.66, 0.70, 0.77, 0.82, 0.88, 0.93],
-               epsilons[1]: [0.66, 0.66, 0.654, 0.657, 0.68, 0.66]}
+               epsilons[1]: [0.66, 0.645, 0.6435, 0.654, 0.654, 0.634]}
 
 for i, eps in enumerate(epsilons):
     # Each plot will contain weak vs strong supervision
