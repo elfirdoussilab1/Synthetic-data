@@ -15,7 +15,7 @@ p = 1000
 mu = 1
 vmu = np.random.randn(p)
 vmu = vmu / np.linalg.norm(vmu) * mu
-
+n_hat = 2000
 print("norm of vmu", np.linalg.norm(vmu))
 
 # Pruning and labelling parameters
@@ -41,8 +41,8 @@ risk_theory = []
 gammas = np.logspace(-6, 2, 20)
 
 for gamma in tqdm(gammas):
-    risk_emps.append(empirical_risk_toy(batch, n, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma))
-    risk_theory.append(test_risk_toy(n, m, p, mu, epsilon, rho, phi, gamma))
+    risk_emps.append(empirical_risk_toy(batch, n, n_hat, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma))
+    risk_theory.append(test_risk_toy(n, n_hat, m, p, mu, epsilon, rho, phi, gamma))
 
 # Plotting results
 fig, ax = plt.subplots()
@@ -52,5 +52,5 @@ ax.set_xlabel('$\gamma$')
 ax.set_ylabel('Test Risk')
 ax.grid(True)
 ax.legend()
-path = './study-plot/' + f'simulate_risk-toy-n-{n}-m-{m}-p-{p}-beta-{beta}-mu-{mu}-epsilon-{epsilon}-rho-{rho}-phi-{phi}.pdf'
+path = './study-plot/' + f'simulate_risk-toy-n-{n}-n_hat-{n_hat}-m-{m}-p-{p}-beta-{beta}-mu-{mu}-epsilon-{epsilon}-rho-{rho}-phi-{phi}.pdf'
 fig.savefig(path, bbox_inches='tight')

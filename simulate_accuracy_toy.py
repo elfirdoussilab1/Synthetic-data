@@ -59,7 +59,7 @@ for gamma in tqdm(gammas):
         w = classifier_vector(X_r, y_r, X_s, y_tilde, vq, gamma)
         res += accuracy(y_test, decision(w, X_test))
     acc_emps.append(res / batch)
-    acc_theory.append(test_accuracy_toy(n, m, p, mu, epsilon, rho, phi, gamma))
+    acc_theory.append(test_accuracy_toy(n, n, m, p, mu, epsilon, rho, phi, gamma))
 
 # Plotting results
 fig, ax = plt.subplots()
