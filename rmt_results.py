@@ -47,16 +47,16 @@ def Delta(n, m, eigvals, epsilon, rho, phi, gamma): # verified
             delta_s = delta_s_up
 
 
-def ddelta(n, m, p, sigma, epsilon, rho, phi, gamma): # Old one
-    alpha = phi * (1 - epsilon) + rho * epsilon
-    N = n + m
-    eta = p / N
-    pi = n / N
-    delta = 0
-    for i in range(50):
-        delta = eta / (gamma + pi / (1 + delta) + alpha * (1 - pi) * sigma**2 / (1 + alpha * sigma**2 * delta))
-        print(delta)
-    return delta
+# def ddelta(n, m, p, sigma, epsilon, rho, phi, gamma): # Old one
+#     alpha = phi * (1 - epsilon) + rho * epsilon
+#     N = n + m
+#     eta = p / N
+#     pi = n / N
+#     delta = 0
+#     for i in range(50):
+#         delta = eta / (gamma + pi / (1 + delta) + alpha * (1 - pi) * sigma**2 / (1 + alpha * sigma**2 * delta))
+#         print(delta)
+#     return delta
 
 def Delta_bars(n, n_hat, m, p, epsilon, rho, phi, gamma):
     alpha = phi * (1 - epsilon) + rho * epsilon
@@ -267,4 +267,45 @@ def test_risk_toy(n, n_hat, m, p, mu, epsilon, rho, phi, gamma):
     # E[g] and E[g^2]
     mean = test_expectation_toy(n, n_hat, m, p, mu, epsilon, rho, phi, gamma)
     expec_2 = test_expectation_2_toy(n, n_hat, m, p, mu, epsilon, rho, phi, gamma)
+    return expec_2 + 1 - 2 * mean   
+
+
+
+############################# Training only on synthetic data #########################
+def Delta_synth(m, p, epsilon, rho, phi, gamma):
+    eta_s = p / m
+    alpha = phi * (1 - epsilon) + rho * epsilon
+    return (eta_s * alpha - alpha - gamma + np.sqrt((alpha + gamma - eta_s * alpha)**2 + 4 * eta_s * alpha * gamma)) / (2 * gamma)
+
+def test_expectation_synth(m, p, mu, epsilon, rho, phi, gamma):
+    alpha = phi * (1 - epsilon) + rho * epsilon
+    lam = phi * (1 - epsilon) - rho * epsilon
+    delta = Delta_synth(m, p, epsilon, rho, phi, gamma)
+
+    return lam * mu**2 / (alpha * mu**2 + alpha + gamma * (1 + delta))
+
+def test_expectation_2_synth(m, p, mu, epsilon, rho, phi, gamma):
+    eta_s = p / m
+    alpha = phi * (1 - epsilon) + rho * epsilon
+    lam = phi * (1 - epsilon) - rho * epsilon
+    delta = Delta_synth(m, p, epsilon, rho, phi, gamma)
+    h = 1 - alpha * eta_s / (alpha + gamma * (1 + delta))**2
+
+    r = (lam * mu)**2 / (h * (alpha * mu**2 + alpha + gamma * (1 + delta)))
+
+    s = (mu**2 + 1) / (alpha * mu**2 + alpha + gamma * (1 + delta)) - 2 * (1 - h) / alpha
+
+    return r * s + (1 - h) / h
+
+def test_accuracy_synth(m, p, mu, epsilon, rho, phi, gamma):
+    # E[g] and E[g^2]
+    mean = test_expectation_synth(m, p, mu, epsilon, rho, phi, gamma)
+    expec_2 = test_expectation_2_synth(m, p, mu, epsilon, rho, phi, gamma)
+    std = np.sqrt(expec_2 - mean**2)
+    return 1 - integrate.quad(lambda x: utils.gaussian(x, 0, 1), abs(mean)/std, np.inf)[0]
+
+def test_risk_synth(m, p, mu, epsilon, rho, phi, gamma):
+    # E[g] and E[g^2]
+    mean = test_expectation_synth(m, p, mu, epsilon, rho, phi, gamma)
+    expec_2 = test_expectation_2_synth(m, p, mu, epsilon, rho, phi, gamma)
     return expec_2 + 1 - 2 * mean   

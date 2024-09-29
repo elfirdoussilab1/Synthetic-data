@@ -9,14 +9,14 @@ plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.s
 
 # Parameters
 n = 1000
-n_hat = n
+p = 200
 mu = 0.7
 gamma = 1
 batch = 10
 phi_weak = 0.5
 rho_weak = 1
 
-ps = [50, 200, 500]
+n_hats = [10, 100, 1000]
 pis = np.linspace(0.001, 0.95, 50)
 #ms = np.linspace(0.01, 20, 50) * n
 #pis = ms / (n + ms)
@@ -26,7 +26,7 @@ linewidth = 3
 fontsize = 20
 labelsize = 17
 
-for p in ps:
+for n_hat in n_hats:
     vmu = np.random.randn(p)
     vmu = vmu / np.linalg.norm(vmu) * mu
 
@@ -37,8 +37,8 @@ for p in ps:
     vmu_hat = np.sum(y_r * X_r, axis = 1) / n
 
     # Estimating covariance
-    C = (vmu * np.ones((n, p)) ).T
-    cov = (y_r * X_r - C) @ (y_r * X_r - C).T / n
+    C = (vmu * np.ones((n_hat, p)) ).T
+    cov = (y_r[:n_hat] * X_r[:,:n_hat] - C) @ (y_r[:n_hat] * X_r[:,:n_hat] - C).T / n_hat
     #Z = np.random.randn(p, n)
     #cov = Z @ Z.T / n
 
@@ -56,8 +56,8 @@ for p in ps:
     for pi in tqdm(pis):
         m = pi * n / (1 - pi) # pi is the proportion of synthetic data
         m = int(m)
-        epsilon = 1 - test_accuracy(0, m, p, vmu, vmu, cov, eigvals, eigvectors, 0, 0, 1, gamma)
-        #epsilon = 0.5
+        #epsilon = 1 - test_accuracy(0, m, p, vmu, vmu, cov, eigvals, eigvectors, 0, 0, 1, gamma)
+        epsilon = 0.3
         print(f'epsilon = {epsilon} for m = {m}')
 
         # Oracle supervision
@@ -70,12 +70,17 @@ for p in ps:
     
     # Plotting results
     # Oracle
-    
-    line, = ax[0].plot(pis, acc_oracle_th, label = f'p = {p}', linewidth = 2.5)
+    label = None
+    if n_hat == n:
+        label = '$\hat n = n$'
+    else:
+        coef = round(n_hat / n, 2)
+        label = f"$ \hat n = {coef} \\times n$"
+    line, = ax[0].plot(pis, acc_oracle_th, label = label, linewidth = 2.5)
     color = line.get_color()
     ax[0].scatter(pis, acc_oracle_emp, marker = 'D', alpha = .7, color = color)
     # Weak 
-    ax[1].plot(pis, acc_weak_th, label = f'p = {p}', linewidth = 2.5, linestyle = '-.')
+    ax[1].plot(pis, acc_weak_th, label = label, linewidth = 2.5, linestyle = '-.')
     ax[1].scatter(pis, acc_weak_emp, marker = 'D', alpha = .7, color = color)
 
 ax[0].set_ylabel('Test Accuracy', fontsize = fontsize)
@@ -94,5 +99,5 @@ ax[0].legend(fontsize = fontsize - 5)
 ax[0].grid()
 ax[1].grid()
 
-path = './study-plot' + f'/toy-setting-n-{n}-mu-{mu}-gamma-{gamma}-batch-{batch}-weak-rho-{rho_weak}-phi-{phi_weak}.pdf'
+path = './study-plot' + f'/toy-setting-nhat-n-{n}-p-{p}-mu-{mu}-gamma-{gamma}-batch-{batch}-weak-rho-{rho_weak}-phi-{phi_weak}.pdf'
 fig.savefig(path, bbox_inches='tight')

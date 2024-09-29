@@ -9,30 +9,17 @@ plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.s
 fix_seed(123)
 
 # Model Parameters
-n = 0
 m = 3000
-p = 1000
+p = 300
 mu = 1
-vmu = np.random.randn(p)
-vmu = vmu / np.linalg.norm(vmu) * mu
-n_hat = 2000
-print("norm of vmu", np.linalg.norm(vmu))
+
+vmu = np.zeros(p)
+vmu[0] = mu
 
 # Pruning and labelling parameters
 epsilon = 0.1
 rho = 0.1
 phi = 0.8
-
-# Real Dataset
-X_r, y_r = gaussian_mixture(n, vmu, None, real = True)
-
-# Synthetic dataset
-#vmu_hat = np.sum(y_r * X_r, axis = 1) / n
-
-# Measuring beta
-#beta = np.sum(vmu * vmu_hat) / mu**2
-
-#print(beta)
 
 # Checking Test Risk
 batch = 5
@@ -41,8 +28,8 @@ risk_theory = []
 gammas = np.logspace(-6, 2, 20)
 
 for gamma in tqdm(gammas):
-    risk_emps.append(empirical_risk_toy(batch, n, n_hat, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma))
-    risk_theory.append(test_risk_toy(n, n_hat, m, p, mu, epsilon, rho, phi, gamma))
+    risk_emps.append(empirical_risk_synth(batch, m, p, mu, epsilon, rho, phi, gamma))
+    risk_theory.append(test_risk_synth(m, p, mu, epsilon, rho, phi, gamma))
 
 # Plotting results
 fig, ax = plt.subplots()
@@ -52,5 +39,5 @@ ax.set_xlabel('$\gamma$')
 ax.set_ylabel('Test Risk')
 ax.grid(True)
 ax.legend()
-path = './study-plot/' + f'simulate_risk-toy-n-{n}-n_hat-{n_hat}-m-{m}-p-{p}-beta-{beta}-mu-{mu}-epsilon-{epsilon}-rho-{rho}-phi-{phi}.pdf'
+path = './study-plot/' + f'simulate_risk-synth-m-{m}-p-{p}-mu-{mu}-epsilon-{epsilon}-rho-{rho}-phi-{phi}.pdf'
 fig.savefig(path, bbox_inches='tight')

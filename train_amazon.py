@@ -78,12 +78,12 @@ for rho, phi in params:
                         alpha = 0.2, linestyle = '-.', color =color)
         
         ax[i].set_title(f'{name.upper()}', fontsize = fontsize)
-        ax[i].set_xlabel('$1 - \pi$', fontsize = fontsize)
+        ax[i].set_xlabel('Proportion of Synthetic data', fontsize = fontsize)
         ax[i].tick_params(axis='x', which = 'both', labelsize=labelsize)
         ax[i].tick_params(axis='y', which = 'both', labelsize=labelsize)
         ax[i].grid(True)
 
 ax[0].set_ylabel('Test Accuracy', fontsize = fontsize)
 ax[0].legend(fontsize = labelsize - 5)
-path = f'./study-plot/train_amazon-n-{n}-p-{p}-gamma-{gamma}-epsilon-{epsilon}-theory-{theory}.pdf'
+path = f'./study-plot/train_amazon-n-{n}-p-{p}-gamma-{gamma}-epsilon-{epsilon}-theory-{theory}-new.pdf'
 fig.savefig(path, bbox_inches='tight')

@@ -46,9 +46,31 @@ def generate_data(n, m, p, vmu, vmu_beta, cov, epsilon, rho, phi):
     vq[y_tilde != y_s] = np.random.binomial(size = m - m_1, p = rho, n = 1)
 
     # Test data
-    X_test, y_test = gaussian_mixture(2*n, vmu, np.eye(p), real = True)
+    if n != 0:
+        X_test, y_test = gaussian_mixture(2*n, vmu, np.eye(p), real = True)
+    else:
+        X_test, y_test = gaussian_mixture(2*m, vmu, np.eye(p), real = True)
 
     return (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test)
+
+def generate_data_synth(m, p, mu, epsilon, rho, phi):
+    # Probably the most important function
+    vmu = np.zeros(p)
+    vmu[0] = mu
+    X_train, y_train = gaussian_mixture(m, vmu, np.eye(p), real = True)
+    X_test, y_test = gaussian_mixture(2 * m, vmu, np.eye(p), real = True)
+
+    # Noisy y
+    y_tilde = y_train * (2 * np.random.binomial(size = m, p = 1 - epsilon, n = 1) - 1) # p = P[X = 1], i.e 1 - p = epsilon
+    
+    # Pruning
+    vq = np.zeros(m)
+    # Indices of y_tilde = y
+    n_1 = (y_tilde == y_train).sum()
+    vq[y_tilde == y_train] = np.random.binomial(size = n_1, p = phi, n = 1) 
+    vq[y_tilde != y_train] = np.random.binomial(size = m - n_1, p = rho, n = 1) 
+
+    return (X_train, y_train, y_tilde, vq), (X_test, y_test)
 
 def accuracy(y, y_pred):
     acc = np.mean(y == y_pred)
@@ -72,6 +94,13 @@ def classifier_vector(X_real, y_real, X_s, y_tilde, vq, gamma):
     Q = np.linalg.solve( (X_real @ X_real.T + (X_s * vq) @ X_s.T) / N + gamma * np.eye(p), np.eye(p))
 
     return Q @ (X_real @ y_real + (X_s * vq) @ y_tilde) / N
+
+def classifier_vector_synth(X_s, y_tilde, vq, gamma):
+    p, m = X_s.shape
+    assert m == len(y_tilde)
+
+    Q = np.linalg.solve( (X_s * vq) @ X_s.T / m + gamma * np.eye(p), np.eye(p))
+    return Q @ ((X_s * vq) @ y_tilde) / m
 
 def empirical_accuracy(batch, n, m, p, vmu, vmu_beta, cov, epsilon, rho, phi, gamma, data_type = 'synthetic'):
     res = 0
@@ -233,3 +262,31 @@ def cov_dist(cov1, cov2):
     eigvals2 = np.linalg.eig(cov2)[0]
 
     return np.sum(abs(eigvals1 - eigvals2))
+
+
+############################## Synthetic data only ##############################
+def empirical_risk_synth(batch, m, p, mu, epsilon, rho, phi, gamma):
+    res = 0
+    cov = np.eye(p)
+
+    for i in range(batch):
+        # Synthetic dataset
+        (X_train, y_train, y_tilde, vq), (X_test, y_test) = generate_data_synth(m, p, mu, epsilon, rho, phi)
+        
+        # Classifier
+        w = classifier_vector_synth(X_train, y_tilde, vq, gamma)
+        res += L2_loss(w, X_test, y_test)
+    return res / batch
+
+def empirical_accuracy_synth(batch, m, p, vmu, epsilon, rho, phi, gamma):
+    res = 0
+    cov = np.eye(p)
+
+    for i in range(batch):
+        # Synthetic dataset
+        (X_real, y_real, X_s, y_tilde, vq), (X_test, y_test) = generate_data(1, m, p, vmu, vmu, cov, epsilon, rho, phi)
+        
+        # Classifier
+        w = classifier_vector_synth(X_s, y_tilde, vq, gamma)
+        res += accuracy(y_test, decision(w, X_test))
+    return res / batch
