@@ -8,7 +8,7 @@ parser.add_argument('--hf_id', type=str, required=True, help='Hugging Face ID')
 args = parser.parse_args()
 
 # Load the dataset
-dataset = load_dataset("RedaAlami/PKU-SafeRLHF-Processed")
+dataset = load_dataset("PKU-SafeRLHF-Processed")
 
 # Function to split dataset into 5 parts
 def split_into_parts(dataset, num_parts=5):
