@@ -8,7 +8,8 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 import pandas as pd
 
-wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
+key = '' # Add key here
+wandb.login(key=key)
 
 # Set random seeds for reproducibility
 fix_seed(1337)
@@ -68,9 +69,8 @@ def evaluate_loss(model, split):
     return loss_accum / n
     
 for m in ms:
-    m_estim = int(p_estim * m)
     train_data = MNIST_generator(n, m, device, True, n_use= n_use, epsilon = epsilon, rho = rho, phi = phi, 
-                                 estimate_cov= True, m_estim=m_estim, supervision= supervision, threshold= threshold)
+                                 estimate_cov= True, m_estim=0, supervision= supervision, threshold= threshold)
 
     # Dataloaders
     train_loader = DataLoader(train_data, batch_size= batch_size, shuffle= True)
@@ -138,13 +138,13 @@ for m in ms:
                 wandb.log({"Train Loss": train_loss, "Test Loss" : test_loss, "Train Accuracy": train_acc, "Test Accuracy": test_acc})
 
                 # Add to results csv
-                row = {'n': n, 'm': m, 'm_estim': m_estim,
-                       'Train Loss': train_loss, 'Test Loss': test_loss,
-                       'Train Accuracy': train_acc, 'Test Accuracy': test_acc}
-                result = pd.read_csv('results.csv')
-                df = pd.concat([result, pd.DataFrame([row])], ignore_index= True)
-                df.to_csv('results.csv', index = False)
+                # row = {'n': n, 'm': m, 'm_estim': 0,
+                #        'Train Loss': train_loss, 'Test Loss': test_loss,
+                #        'Train Accuracy': train_acc, 'Test Accuracy': test_acc}
+                # result = pd.read_csv('results.csv')
+                # df = pd.concat([result, pd.DataFrame([row])], ignore_index= True)
+                # df.to_csv('results.csv', index = False)
 
     # Saving the final model
-    torch.save(model.state_dict(), f'mnist-n-{n}-m-{m}-m_estim-{m_estim}-supervision-{supervision}-thresh-{threshold}.pth')
+    torch.save(model.state_dict(), f'mnist-n-{n}-m-{m}-supervision-{supervision}-thresh-{threshold}.pth')
     wandb.finish()
