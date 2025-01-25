@@ -1,5 +1,5 @@
 # Synthetic-data
-This is the main repository of the paper: Maximizing the potential of synthetic data: Insights from Random Matrix Theory.
+This is the official repository of the paper: [Maximizing the potential of synthetic data: Insights from Random Matrix Theory](https://arxiv.org/pdf/2410.08942?), accepted at **ICLR 2025**.
 
 ## Abstract
 Synthetic data has gained attention for training large language models, but poor-quality data can harm performance. A potential solution is data pruning, which retains only high-quality data based on a score function (human or machine feedback). Previous work analyzed models trained on synthetic data as sample size increases.
@@ -20,11 +20,11 @@ All the figures in the paper and more can be found in the folders:
 * Figure 8 can be reproduced using the file [safety_score](safety_score.py). The numerical results are gotten using files in the folder [Safety-Alignement-experiment](Safety-Alignement-experiment/).
 * Figure 9 along with the numerical results can be obtained through the folder [QA_synthetic_safety](QA_synthetic_safety/).
 
-# Extra details:
+# Details about the safety experiments:
 
 ## Safe Falcon-11B Synthetic Data Training and Evaluation Pipeline
 
-This repository contains a full pipeline to prepare, fine-tune, and evaluate a Safe Falcon-11B model using synthetic data. The steps include data preparation, sweeping with epsilon, applying filters, and pushing the model to Hugging Face. Additionally, safety evaluations are conducted using Llama Guard 3 8B.
+In this section, we present a full pipeline to prepare, fine-tune, and evaluate a Safe Falcon-11B model using synthetic data. The steps include data preparation, sweeping with epsilon, applying filters, and pushing the model to Hugging Face. Additionally, safety evaluations are conducted using Llama Guard 3 8B.
 
 ### Installation
 
@@ -67,14 +67,14 @@ python prepareRealData.py --hf_id $YOUR_HF_ID
 ### 2. Split Synthetic Data
 
 ```bash
-python splitSyntheticData.py --hf_id $YOUR_HF_ID
+python safety-alignement-experiment/splitSyntheticData.py --hf_id $YOUR_HF_ID
 ```
 
 ### 3. Sweep with Epsilon
 
 ```bash
 epsilon=0.1
-python prepareWithEpsilon.py --hf_id $YOUR_HF_ID --epsilon $epsilon
+python safety-alignement-experiment/prepareWithEpsilon.py --hf_id $YOUR_HF_ID --epsilon $epsilon
 ```
 
 ### 4. Apply Rho and Phi Filters
@@ -82,13 +82,13 @@ python prepareWithEpsilon.py --hf_id $YOUR_HF_ID --epsilon $epsilon
 ```bash
 rho=0.5
 phi=0.5
-python push_dataset.py --hf_id $YOUR_HF_ID --epsilon $epsilon --rho $rho --phi $phi
+python safety-alignement-experiment/push_dataset.py --hf_id $YOUR_HF_ID --epsilon $epsilon --rho $rho --phi $phi
 ```
 
 ### 5. Prepare Final Data
 
 ```bash
-python prepareFinalData.py --hf_id $YOUR_HF_ID --epsilon $epsilon --rho $rho --phi $phi
+python safety-alignement-experiment/prepareFinalData.py --hf_id $YOUR_HF_ID --epsilon $epsilon --rho $rho --phi $phi
 ```
 
 ### 6. Clone the Alignment Handbook
@@ -198,3 +198,4 @@ python safetyEvaluation.py --epsilon $epsilon --rho $rho --phi $phi
 
 This pipeline allows for efficient preparation, fine-tuning, and safety evaluation of synthetic data using Safe Falcon-11B. Follow each step carefully, and don't forget to customize your Hugging Face ID and tokens where needed.
 
+## Citation

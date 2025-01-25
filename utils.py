@@ -169,7 +169,6 @@ def gaussian(x, mean, std):
 ######################## Toy Setting ########################
 def empirical_risk_toy(batch, n, n_hat, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma, estim_cov = False):
     res = 0
-    #vmu_hat = np.sum(y_r * X_r, axis = 1) / n
 
     for i in range(batch):
         Z = np.random.randn(p, n_hat)
@@ -189,7 +188,6 @@ def empirical_risk_toy(batch, n, n_hat, m, p, vmu, X_r, y_r, epsilon, rho, phi, 
 
 def empirical_accuracy_toy(batch, n, n_hat, m, p, vmu, X_r, y_r, epsilon, rho, phi, gamma, estim_cov = False):
     res = 0
-    #vmu_hat = np.sum(y_r * X_r, axis = 1) / n
 
     for i in range(batch):
         Z = np.random.randn(p, n_hat)
