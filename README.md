@@ -17,8 +17,8 @@ All the figures in the paper and more can be found in the folders:
 * Images in Figure 5 can be obtained through the notebook called [mnist](mnist.ipynb). 
 * Run the file [train_amazon](train_amazon.py) to get the plots of Figure 6: set $n = 800$.
 * Figure 7 can be found in notebook [mnist](mnist.ipynb) and the results are obtained by running the file [train_mnist](train_mnist.py).
-* Figure 8 can be reproduced using the file [safety_score](safety_score.py). The numerical results are gotten using files in the folder [Safety-Alignement-experiment](Safety-Alignement-experiment/).
-* Figure 9 along with the numerical results can be obtained through the folder [QA_synthetic_safety](QA_synthetic_safety/).
+* Figure 8 can be reproduced using the file [safety_score](safety_score.py). The numerical results are gotten using files in the folder [safety-alignement-experiment](safety-alignement-experiment/).
+* Figure 9 along with the numerical results can be obtained through the folder [QA-synthetic](QA-synthetic/).
 
 # Details about the safety experiments:
 
