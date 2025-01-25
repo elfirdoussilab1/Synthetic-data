@@ -8,3 +8,4 @@ wandb
 data
 *.pkl
 GANs/
+study-plot/
