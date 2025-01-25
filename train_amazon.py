@@ -46,13 +46,7 @@ for rho, phi in params:
                 # Real data
                 X_r = data.X_r
                 y_r = data.y_r
-                #vmu = data.vmu
-                #C = (vmu * np.ones((n, p)) ).T
-                #cov = (y_r * X_r.T - C) @ (y_r * X_r.T - C).T / n
-
-                # eigenvalues and eigenvectors
-                #eigvals, eigvectors = np.linalg.eig(cov)
-                #epsilon = 1 - test_accuracy(0, m, p, vmu, vmu, cov, eigvals, eigvectors, 0, 0, 1, gamma)
+        
                 # Synthetic data
                 X_s, y_s, vmu_hat, vq, y_tilde = data.generate_synth_data(m, epsilon, rho, phi)
 

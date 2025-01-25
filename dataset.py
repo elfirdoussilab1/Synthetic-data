@@ -102,12 +102,9 @@ class Amazon:
         vmu_hat = np.mean(self.y_r * self.X_r.T, axis = 1 ) / n
 
         C = (self.vmu * np.ones((n , p)) ).T
-        #C = (vmu_hat * np.ones((n , p)) ).T
-
         cov = (self.y_r * self.X_r.T - C) @ (self.y_r * self.X_r.T - C).T / n
 
         # generate synthetic samples
-        #X_s, y_s = utils.gaussian_mixture(m, vmu_hat, cov, real = False)
         X_s, y_s = utils.gaussian_mixture(m, self.vmu, cov, real = False)
 
         # Pruning
