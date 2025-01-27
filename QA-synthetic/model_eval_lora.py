@@ -23,33 +23,13 @@ model_base = args.base
 tokenizer = AutoTokenizer.from_pretrained(model_base)
 lora_path = snapshot_download(repo_id=model_path)
 
-def gen_from_model(x):
-    messages = x[:-1]
-    input_ids = tokenizer.apply_chat_template(messages, return_tensors="pt", return_dict=True).to("cuda")
-    of = input_ids.input_ids.shape[1]
-    outputs = model.generate(**input_ids, max_new_tokens=40)
-    ret = tokenizer.decode(outputs[0][of:])
-    return ret
 
-
-def get_response(inp):
-    ret = gen_from_model(inp)
-    if ("UNSAFE" in ret):
-        return "unsafe"
-    elif "SAFE" in ret:
-        return "safe"
-    return "none"
-
-
-test = load_dataset("ai-theory/PKU-SFT-Safety")["test"]
+org = "<replace with you HF org>"
+test = load_dataset(f"{org}/PKU-SFT-Safety")["test"]
 df_test = test.to_pandas()
 
 model_name = model_path[model_path.find("/")+1:]
 file_name = f"eval_resp/{model_name}.json"
-
-def gen_responses(row):
-    row["pred"] = get_response(row["messages"])
-    return row
 
 def classify_resp(inp):
     if "UNSAFE" in inp:
@@ -81,7 +61,3 @@ recall = round(recall_score(df_test["category"],df_res["pred"],average='weighted
 f1 = round(f1_score(df_test["category"],df_res["pred"],average='weighted'),3)
 print(f"Results for {model_path}")
 print(f"acc: {acc}\nrecall: {recall}\nf1: {f1}")
-# print(f"Actual classes")
-# print(df_res["category"].value_counts())
-# print(f"Predicted classes")
-# print(df_res["pred"].value_counts())

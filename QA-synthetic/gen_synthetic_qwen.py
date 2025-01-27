@@ -9,15 +9,20 @@ from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 from tqdm import tqdm
 import pandas as pd
+import argparse
 
+"""
+This script will label 
+"""
 
-def main():
+def main(args):
     model_name = 'Qwen/Qwen2-7B-Instruct'
 
-    data = load_dataset("ai-theory/synthetic-safety-prompts-v2")
+    data = load_dataset(args.dataset)
     df_data = data["train"].to_pandas()
+    
+    ## dataset will have column called gen, which indicate that we expect this sample to be classified by qwen-7b-instruct
     df_data = df_data[df_data["gen"]=="qwen"]
-    #.sample(n=100, random_state=10)
     prompts = df_data['messages']
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -46,8 +51,13 @@ def main():
         out_df = pd.concat([out_df, pd.DataFrame([new_row])])
 
     print(f"dumping outputs")
-    out_df.to_json("new_gens/qwen_responses.json")
+    out_df.to_json(f"{args.out_dir}/qwen_responses.json")
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="scri[t] that ask qwen-7b-instruct to label QA as safe/unsafe")
+    parser.add_argument('--dataset', type=str, help='HF repo of the QA dataset')
+    parser.add_argument('--out-dir', type=str, help='specific path to store labelled samples')
+    
+    args = parser.parse_args()
+    main(args)
