@@ -199,3 +199,11 @@ python safetyEvaluation.py --epsilon $epsilon --rho $rho --phi $phi
 This pipeline allows for efficient preparation, fine-tuning, and safety evaluation of synthetic data using Safe Falcon-11B. Follow each step carefully, and don't forget to customize your Hugging Face ID and tokens where needed.
 
 ## Citation
+```
+@article{firdoussi2024maximizing,
+  title={Maximizing the Potential of Synthetic Data: Insights from Random Matrix Theory},
+  author={Firdoussi, Aymane El and Seddik, Mohamed El Amine and Hayou, Soufiane and Alami, Reda and Alzubaidi, Ahmed and Hacid, Hakim},
+  journal={arXiv preprint arXiv:2410.08942},
+  year={2024}
+}
+```
