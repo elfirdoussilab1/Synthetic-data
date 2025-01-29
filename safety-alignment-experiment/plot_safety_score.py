@@ -15,7 +15,7 @@ epsilons = [0.1, 0.5]
 # Proportions of synthetic data
 pis = [0, 0.58, 0.74, 0.81, 0.85, 0.88]
 
-# Scores with strong supervision: Obtained by running files in safety-alignement-experiment folder!
+# Scores with strong supervision: the following numerical were obtained by running safetyEvalution.py file!
 scores_strong = {epsilons[0]: np.array([0.66, 0.76, 0.87, 0.95, 0.98, 0.99]) * 100, 
                  epsilons[1]: np.array([0.66, 0.71, 0.75, 0.82, 0.88, 0.93]) * 100}
 
